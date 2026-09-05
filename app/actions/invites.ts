@@ -16,11 +16,13 @@ export async function createInvite() {
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     },
   });
+  revalidatePath("/admin");
   revalidatePath("/admin/invites");
 }
 
 export async function deleteInvite(inviteId: string) {
   await requireAdmin();
   await db.invite.delete({ where: { id: inviteId } }).catch(() => {});
+  revalidatePath("/admin");
   revalidatePath("/admin/invites");
 }

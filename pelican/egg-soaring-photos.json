@@ -4,7 +4,7 @@
     "version": "PTDL_v2"
   },
   "exported_at": "2026-09-05T00:00:00+00:00",
-  "name": "Soaring Photos v1.1.5",
+  "name": "Soaring Photos v1.1.6",
   "author": "admin@example.com",
   "description": "Private, invite-only family photo and video sharing app built with Next.js, Prisma, and SQLite.",
   "features": null,
@@ -12,7 +12,7 @@
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
   },
   "file_denylist": [],
-  "startup": "if [ ! -x node_modules/.bin/next ]; then echo 'Installing missing Node.js dependencies...'; npm ci; fi; if [ ! -f .next/BUILD_ID ]; then echo 'Building Next.js production app...'; npm run build; fi; echo 'Applying database migrations...'; npx prisma migrate deploy; echo 'Ensuring initial admin account...'; npm run db:ensure-admin; npm run start -- -p {{SERVER_PORT}}",
+  "startup": "set -e; if ! command -v git >/dev/null; then echo 'Git is unavailable in the runtime image.'; exit 1; fi; if [ ! -d .git ]; then echo 'No Git checkout found. Reinstall the server once to initialize it.'; exit 1; fi; echo 'Checking GitHub for updates...'; LOCAL_REVISION=$(git rev-parse HEAD); git fetch --depth=1 origin \"{{GIT_BRANCH}}\"; REMOTE_REVISION=$(git rev-parse FETCH_HEAD); if [ \"$LOCAL_REVISION\" != \"$REMOTE_REVISION\" ]; then echo 'New revision found. Updating and building...'; git reset --hard FETCH_HEAD; npm ci; npx prisma generate; npm run build; elif [ ! -x node_modules/.bin/next ]; then echo 'Installing missing Node.js dependencies...'; npm ci; fi; if [ ! -f .next/BUILD_ID ]; then echo 'Building Next.js production app...'; npm run build; fi; echo 'Applying database migrations...'; npx prisma migrate deploy; echo 'Ensuring initial admin account...'; npm run db:ensure-admin; npm run start -- -p {{SERVER_PORT}}",
   "config": {
     "files": "{}",
     "startup": "{\"done\": \"Ready in\"}",

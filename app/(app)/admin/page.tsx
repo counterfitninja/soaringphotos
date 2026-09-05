@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { deletePostAsAdmin } from "@/app/actions/admin";
+import { createInvite, deleteInvite } from "@/app/actions/invites";
+import CopyInviteLink from "@/components/CopyInviteLink";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getMediaMetadata } from "@/lib/storage";
@@ -20,7 +22,7 @@ export default async function AdminPage() {
   await requireAdmin();
   const now = new Date();
 
-  const [users, recentPosts, allMedia, totals] = await Promise.all([
+  const [users, recentPosts, allMedia, invites, totals] = await Promise.all([
     db.user.findMany({
       select: {
         id: true,
@@ -53,12 +55,15 @@ export default async function AdminPage() {
       take: 20,
     }),
     db.media.findMany({ select: { key: true, mimeType: true } }),
+    db.invite.findMany({
+      include: { usedBy: { select: { username: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
     Promise.all([
       db.post.count(),
       db.comment.count(),
       db.like.count(),
       db.sharedPost.count(),
-      db.invite.count({ where: { usedAt: null, expiresAt: { gt: now } } }),
       db.notification.count({ where: { readAt: null } }),
     ]),
   ]);
@@ -74,7 +79,8 @@ export default async function AdminPage() {
   const unknownFiles = mediaSizes.filter((media) => media.size === null).length;
   const imageCount = allMedia.filter((media) => media.mimeType.startsWith("image/")).length;
   const videoCount = allMedia.filter((media) => media.mimeType.startsWith("video/")).length;
-  const [postCount, commentCount, likeCount, shareCount, activeInviteCount, unreadAlertCount] = totals;
+  const [postCount, commentCount, likeCount, shareCount, unreadAlertCount] = totals;
+  const activeInviteCount = invites.filter((invite) => !invite.usedAt && invite.expiresAt > now).length;
   const largestFiles = mediaSizes
     .filter((media): media is typeof media & { size: number } => media.size !== null)
     .sort((first, second) => second.size - first.size)
@@ -100,7 +106,7 @@ export default async function AdminPage() {
           </p>
         </div>
         <Link href="/admin/invites" className={btnSmall}>
-          Invite members
+          Create invites
         </Link>
       </div>
 
@@ -112,6 +118,64 @@ export default async function AdminPage() {
             <p className="mt-1 text-xs text-neutral-500">{stat.detail}</p>
           </div>
         ))}
+      </section>
+
+      <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-neutral-100 p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">Invite links</h2>
+            <p className="mt-1 text-xs text-neutral-500">Single-use links for adding family members.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/invites" className={btnSmall}>
+              Create new invites
+            </Link>
+            <form action={createInvite}>
+              <button className={btnSmall}>+ Generate invite link</button>
+            </form>
+          </div>
+        </div>
+        {invites.length === 0 ? (
+          <p className="p-6 text-center text-sm text-neutral-500">
+            No invites yet. Generate one to invite your first family member.
+          </p>
+        ) : (
+          <ul className="divide-y divide-neutral-100">
+            {invites.map((invite) => {
+              const expired = invite.expiresAt < now;
+              const active = !invite.usedAt && !expired;
+              return (
+                <li key={invite.id} className="flex items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    {active ? (
+                      <CopyInviteLink token={invite.token} />
+                    ) : (
+                      <code className="text-xs text-neutral-400">/invite/{invite.token}</code>
+                    )}
+                    <p className="mt-1 text-xs text-neutral-500">
+                      {invite.usedAt ? (
+                        <>
+                          Used by <span className="font-medium">{invite.usedBy?.username ?? "unknown"}</span>
+                        </>
+                      ) : expired ? (
+                        "Expired"
+                      ) : (
+                        <>Active · expires {invite.expiresAt.toLocaleDateString()}</>
+                      )}
+                    </p>
+                  </div>
+                  {!invite.usedAt && (
+                    <form action={deleteInvite.bind(null, invite.id)}>
+                      <button className="text-xs text-neutral-400 hover:text-red-600" title="Delete invite">
+                        Delete
+                      </button>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
