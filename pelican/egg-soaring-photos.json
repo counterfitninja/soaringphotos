@@ -166,6 +166,36 @@
       "user_editable": true,
       "rules": "nullable|string|max:255",
       "field_type": "text"
+    },
+    {
+      "name": "VAPID Public Key",
+      "description": "Public key for browser push notifications. Generate it with: npx web-push generate-vapid-keys",
+      "env_variable": "VAPID_PUBLIC_KEY",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "VAPID Private Key",
+      "description": "Private key paired with the VAPID public key. Keep this secret.",
+      "env_variable": "VAPID_PRIVATE_KEY",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "VAPID Contact",
+      "description": "A mailto: contact address required by Web Push, for example mailto:admin@example.com.",
+      "env_variable": "VAPID_SUBJECT",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
     }
   ]
 }

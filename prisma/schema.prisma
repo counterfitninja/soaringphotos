@@ -24,6 +24,7 @@ model User {
   sharesReceived SharedPost[] @relation("ShareTo")
   notifications  Notification[] @relation("NotificationUser")
   notificationsSent Notification[] @relation("NotificationActor")
+  pushSubscriptions PushSubscription[]
 }
 
 model Invite {
@@ -116,4 +117,18 @@ model Notification {
 
   @@unique([userId, postId, type])
   @@index([userId, createdAt])
+}
+
+model PushSubscription {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint       String   @unique
+  p256dh         String
+  auth           String
+  expirationTime DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
 }

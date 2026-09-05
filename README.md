@@ -12,6 +12,7 @@ A private, invite-only Instagram-style photo & video sharing app for family memb
 - **Forward / share** — send a post to another family member; it lands in their "Shared with me" inbox (unread badge in the navbar)
 - **Profiles** — per-user page with their post grid
 - **Private media** — uploaded files are served through an authenticated route, never from a public folder
+- **PWA push notifications** — opt in on the Notifications page to receive new-post and mention alerts while the app is closed
 
 ## Tech stack
 
@@ -43,6 +44,17 @@ Copy `.env.example` to `.env` and adjust:
 | `STORAGE_DRIVER` | `local` (default) or `s3` |
 | `UPLOAD_DIR` | Folder for uploaded media when using `local` (default `./uploads`) |
 | `S3_ENDPOINT` / `S3_REGION` / `S3_BUCKET` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | S3-compatible storage (e.g. MinIO) when using `s3` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push credentials and a `mailto:` contact address |
+
+### Push notifications
+
+Generate a VAPID key pair once per deployed environment, then add it to `.env` (or your hosting provider's environment settings):
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Push notifications require HTTPS in production. Each family member enables them from **Notifications** on every browser or device where they want alerts.
 
 ### Offloading media to MinIO / S3
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sessionOptions } from "@/lib/session";
 
 const PUBLIC_PREFIXES = ["/login", "/invite"];
+const PUBLIC_ASSETS = ["/manifest.webmanifest", "/sw.js", "/icon", "/apple-icon"];
 
 /**
  * Lightweight gate: only checks for the presence of the session cookie.
@@ -10,9 +11,10 @@ const PUBLIC_PREFIXES = ["/login", "/invite"];
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+  const isPublicAsset = PUBLIC_ASSETS.includes(pathname);
   const hasSessionCookie = req.cookies.has(sessionOptions.cookieName);
 
-  if (!hasSessionCookie && !isPublic) {
+  if (!hasSessionCookie && !isPublic && !isPublicAsset) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
   if (hasSessionCookie && pathname === "/login") {

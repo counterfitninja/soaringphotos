@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sendPushNotifications } from "@/lib/push";
 
 const MENTION_RE = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{3,20})\b/g;
 
@@ -27,12 +28,21 @@ export async function createPostNotifications({
 
   if (recipients.length === 0) return;
 
+  const recipientsWithType = recipients.map((recipient) => ({
+    id: recipient.id,
+    type: mentionedUsernames.has(recipient.username.toLowerCase()) ? ("mention" as const) : ("post" as const),
+  }));
   await db.notification.createMany({
-    data: recipients.map((recipient) => ({
+    data: recipientsWithType.map((recipient) => ({
       userId: recipient.id,
       actorId: authorId,
       postId,
-      type: mentionedUsernames.has(recipient.username.toLowerCase()) ? "mention" : "post",
+      type: recipient.type,
     })),
   });
+
+  const author = await db.user.findUnique({ where: { id: authorId }, select: { username: true } });
+  if (author) {
+    await sendPushNotifications({ recipients: recipientsWithType, actorUsername: author.username, caption, postId });
+  }
 }

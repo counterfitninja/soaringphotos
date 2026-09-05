@@ -1,5 +1,6 @@
 import MobileTabBar from "@/components/MobileTabBar";
 import Navbar from "@/components/Navbar";
+import PushNotifications from "@/components/PushNotifications";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         unreadNotifications={unreadNotifications}
       />
       <main className="mx-auto max-w-xl px-4 py-6 pb-20 lg:max-w-6xl sm:pb-6">{children}</main>
+      <PushNotifications />
       <MobileTabBar />
     </div>
   );

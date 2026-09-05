@@ -4,6 +4,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Soaring Photos",
   description: "Private photo & video sharing for our family",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Soaring Photos" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
