@@ -1,17 +1,39 @@
 import webpush from "web-push";
 import { db } from "@/lib/db";
 
-const publicKey = process.env.VAPID_PUBLIC_KEY;
-const privateKey = process.env.VAPID_PRIVATE_KEY;
-const configuredSubject = process.env.VAPID_SUBJECT?.trim();
+// Some hosting UIs store env values with surrounding quotes/whitespace; strip those defensively.
+function cleanEnv(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  return trimmed.replace(/^["']|["']$/g, "");
+}
+
+const publicKey = cleanEnv(process.env.VAPID_PUBLIC_KEY);
+const privateKey = cleanEnv(process.env.VAPID_PRIVATE_KEY);
+const configuredSubject = cleanEnv(process.env.VAPID_SUBJECT);
 const subject = configuredSubject
   ? configuredSubject.includes(":")
     ? configuredSubject
     : `mailto:${configuredSubject}`
   : "mailto:admin@soaring.photos";
 
+// A malformed public key decodes to something other than 65 bytes; validate up front instead of throwing mid-request.
+function isValidVapidPublicKey(key: string) {
+  try {
+    const decoded = Buffer.from(key.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    return decoded.length === 65;
+  } catch {
+    return false;
+  }
+}
+
+const vapidConfigured = Boolean(publicKey && privateKey && isValidVapidPublicKey(publicKey));
+if (publicKey && privateKey && !vapidConfigured) {
+  console.error("VAPID_PUBLIC_KEY is invalid (must decode to 65 bytes); push notifications are disabled.");
+}
+
 export function isPushConfigured() {
-  return Boolean(publicKey && privateKey);
+  return vapidConfigured;
 }
 
 export function getPushPublicKey() {
@@ -31,7 +53,12 @@ export async function sendPushNotifications({
 }) {
   if (!isPushConfigured() || recipients.length === 0 || !publicKey || !privateKey) return;
 
-  webpush.setVapidDetails(subject, publicKey, privateKey);
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+  } catch (error) {
+    console.error("Failed to configure VAPID details; skipping push notifications", error);
+    return;
+  }
   const subscriptions = await db.pushSubscription.findMany({
     where: { userId: { in: recipients.map((recipient) => recipient.id) } },
   });
