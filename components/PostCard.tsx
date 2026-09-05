@@ -84,7 +84,7 @@ export default function PostCard({
           </p>
         ))}
 
-        <CommentForm postId={post.id} />
+        <CommentForm postId={post.id} members={members} />
       </div>
     </article>
   );

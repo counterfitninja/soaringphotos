@@ -1,3 +1,4 @@
+import Image from "next/image";
 import RegisterForm from "@/components/RegisterForm";
 import { db } from "@/lib/db";
 
@@ -13,7 +14,15 @@ export default async function InvitePage({
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow">
-        <h1 className="mb-1 text-2xl font-bold">🦅 Join Soaring Photos</h1>
+        <Image
+          src="/logo.jpeg"
+          alt="Soaring Photos"
+          width={220}
+          height={235}
+          className="mx-auto mb-4 h-auto w-44"
+          priority
+        />
+        <h1 className="mb-1 text-2xl font-bold">Join Soaring Photos</h1>
         {valid ? (
           <>
             <p className="mb-6 text-sm text-neutral-500">Create your family account</p>

@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "Soaring Photos",
   description: "Private photo & video sharing for our family",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon.jpeg",
+    apple: "/apple-icon.jpeg",
+  },
   appleWebApp: { capable: true, title: "Soaring Photos" },
 };
 

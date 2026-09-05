@@ -25,6 +25,8 @@ model User {
   notifications  Notification[] @relation("NotificationUser")
   notificationsSent Notification[] @relation("NotificationActor")
   pushSubscriptions PushSubscription[]
+  notificationMutes NotificationMute[] @relation("MuteOwner")
+  mutedByOthers     NotificationMute[] @relation("MutedByOthers")
 }
 
 model Invite {
@@ -131,4 +133,18 @@ model PushSubscription {
   updatedAt      DateTime @updatedAt
 
   @@index([userId])
+}
+
+// A row means `user` has opted out of "new post" notifications from `mutedUser`.
+// Mentions always notify regardless of a mute.
+model NotificationMute {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("MuteOwner", fields: [userId], references: [id], onDelete: Cascade)
+  mutedUserId String
+  mutedUser   User     @relation("MutedByOthers", fields: [mutedUserId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, mutedUserId])
+  @@index([mutedUserId])
 }

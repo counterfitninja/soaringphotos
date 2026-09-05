@@ -28,10 +28,22 @@ export async function createPostNotifications({
 
   if (recipients.length === 0) return;
 
-  const recipientsWithType = recipients.map((recipient) => ({
-    id: recipient.id,
-    type: mentionedUsernames.has(recipient.username.toLowerCase()) ? ("mention" as const) : ("post" as const),
-  }));
+  const mutes = await db.notificationMute.findMany({
+    where: { mutedUserId: authorId, userId: { in: recipients.map((recipient) => recipient.id) } },
+    select: { userId: true },
+  });
+  const mutedRecipientIds = new Set(mutes.map((mute) => mute.userId));
+
+  const recipientsWithType = recipients
+    .map((recipient) => ({
+      id: recipient.id,
+      type: mentionedUsernames.has(recipient.username.toLowerCase()) ? ("mention" as const) : ("post" as const),
+    }))
+    // A muted author's regular posts are skipped, but mentions still notify.
+    .filter((recipient) => recipient.type === "mention" || !mutedRecipientIds.has(recipient.id));
+
+  if (recipientsWithType.length === 0) return;
+
   await db.notification.createMany({
     data: recipientsWithType.map((recipient) => ({
       userId: recipient.id,

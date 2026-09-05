@@ -20,11 +20,16 @@ export default async function NotificationsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Notifications</h1>
-        {unreadCount > 0 && (
-          <form action={markAllNotificationsRead}>
-            <button className="text-sm text-sky-600 hover:underline">Mark all read</button>
-          </form>
-        )}
+        <div className="flex items-center gap-3">
+          <Link href="/notifications/settings" className="text-sm text-sky-600 hover:underline">
+            Settings
+          </Link>
+          {unreadCount > 0 && (
+            <form action={markAllNotificationsRead}>
+              <button className="text-sm text-sky-600 hover:underline">Mark all read</button>
+            </form>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { sessionOptions } from "@/lib/session";
 
 const PUBLIC_PREFIXES = ["/login", "/invite"];
-const PUBLIC_ASSETS = ["/manifest.webmanifest", "/sw.js", "/icon", "/apple-icon"];
+const PUBLIC_ASSETS = [
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/icon.jpeg",
+  "/apple-icon.jpeg",
+  "/logo.jpeg",
+];
 
 /**
  * Lightweight gate: only checks for the presence of the session cookie.
