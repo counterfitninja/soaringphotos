@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CommentForm from "@/components/CommentForm";
+import DeletePostButton from "@/components/DeletePostButton";
 import LikeButton from "@/components/LikeButton";
 import MediaCarousel from "@/components/MediaCarousel";
 import ShareDialog from "@/components/ShareDialog";
@@ -38,6 +39,7 @@ export default function PostCard({
           </Link>
           <p className="text-xs text-neutral-400">{timeAgo(post.createdAt)}</p>
         </div>
+        {post.author.id === currentUserId && <DeletePostButton postId={post.id} />}
       </header>
 
       <MediaCarousel media={post.media} />
