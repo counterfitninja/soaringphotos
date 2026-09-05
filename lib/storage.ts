@@ -17,7 +17,7 @@ export interface StoredFileMetadata {
 }
 
 export interface StorageDriver {
-  save(file: File, key: string): Promise<void>;
+  save(body: Buffer, key: string, mimeType: string): Promise<void>;
   get(key: string): Promise<StoredFile | null>;
   metadata(key: string): Promise<StoredFileMetadata | null>;
   remove(key: string): Promise<void>;
@@ -40,10 +40,10 @@ function uploadRoot() {
 }
 
 const localDriver: StorageDriver = {
-  async save(file, key) {
+  async save(body, key) {
     const dir = uploadRoot();
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, key), Buffer.from(await file.arrayBuffer()));
+    await fs.writeFile(path.join(dir, key), body);
   },
   async get(key) {
     try {
@@ -87,15 +87,15 @@ async function s3Client(): Promise<S3ClientType> {
 }
 
 const s3Driver: StorageDriver = {
-  async save(file, key) {
+  async save(body, key, mimeType) {
     const { PutObjectCommand } = await import("@aws-sdk/client-s3");
     const client = await s3Client();
     await client.send(
       new PutObjectCommand({
         Bucket: process.env.S3_BUCKET,
         Key: key,
-        Body: Buffer.from(await file.arrayBuffer()),
-        ContentType: file.type,
+        Body: body,
+        ContentType: mimeType,
       }),
     );
   },
@@ -140,12 +140,33 @@ function driver(): StorageDriver {
   return process.env.STORAGE_DRIVER === "s3" ? s3Driver : localDriver;
 }
 
-/** Saves an uploaded file and returns its generated storage key. */
-export async function saveMedia(file: File): Promise<{ key: string }> {
-  const ext = EXT_BY_MIME[file.type] ?? path.extname(file.name).toLowerCase();
+async function optimizeImage(file: File): Promise<{ body: Buffer; mimeType: string }> {
+  const body = Buffer.from(await file.arrayBuffer());
+  if (file.type === "image/gif") {
+    return { body, mimeType: file.type };
+  }
+
+  const sharp = (await import("sharp")).default;
+  let pipeline = sharp(body).rotate().resize({ width: 2560, height: 2560, fit: "inside", withoutEnlargement: true });
+  if (file.type === "image/png") {
+    pipeline = pipeline.png({ compressionLevel: 9, palette: true, quality: 80 });
+  } else if (file.type === "image/webp") {
+    pipeline = pipeline.webp({ quality: 82 });
+  } else {
+    pipeline = pipeline.jpeg({ quality: 82, mozjpeg: true });
+  }
+  return { body: await pipeline.toBuffer(), mimeType: file.type };
+}
+
+/** Saves an uploaded file, optimizing supported raster images to conserve storage. */
+export async function saveMedia(file: File): Promise<{ key: string; mimeType: string }> {
+  const stored = file.type.startsWith("image/")
+    ? await optimizeImage(file)
+    : { body: Buffer.from(await file.arrayBuffer()), mimeType: file.type };
+  const ext = EXT_BY_MIME[stored.mimeType] ?? path.extname(file.name).toLowerCase();
   const key = `${randomUUID()}${ext}`;
-  await driver().save(file, key);
-  return { key };
+  await driver().save(stored.body, key, stored.mimeType);
+  return { key, mimeType: stored.mimeType };
 }
 
 export async function getMedia(key: string): Promise<StoredFile | null> {

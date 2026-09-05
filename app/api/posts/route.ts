@@ -41,9 +41,9 @@ export async function POST(req: Request) {
 
   try {
     for (const [index, file] of files.entries()) {
-      const { key } = await saveMedia(file);
+      const { key, mimeType } = await saveMedia(file);
       await db.media.create({
-        data: { postId: post.id, key, mimeType: file.type, order: index },
+        data: { postId: post.id, key, mimeType, order: index },
       });
     }
   } catch (err) {
