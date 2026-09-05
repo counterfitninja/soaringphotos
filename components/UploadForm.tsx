@@ -93,6 +93,8 @@ export default function UploadForm() {
         setError(data?.error ?? "Upload failed. Please try again.");
         return;
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/");
       router.refresh();
     } finally {
