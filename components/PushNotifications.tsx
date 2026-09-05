@@ -18,6 +18,7 @@ export default function PushNotifications() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIosBrowser, setIsIosBrowser] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
 
@@ -28,6 +29,7 @@ export default function PushNotifications() {
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const standalone = window.matchMedia("(display-mode: standalone)").matches
       || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+    setIsStandalone(standalone);
     setIsIosBrowser(ios && !standalone);
 
     void fetch("/api/push/subscription")
@@ -41,6 +43,7 @@ export default function PushNotifications() {
 
     function captureInstallPrompt(event: Event) {
       event.preventDefault();
+      if (standalone) return;
       setInstallPrompt(event as InstallPromptEvent);
       setShowPrompt(true);
     }
@@ -98,11 +101,15 @@ export default function PushNotifications() {
     <aside className="fixed inset-x-4 bottom-24 z-20 mx-auto max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-lg sm:bottom-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold">Install Soaring Photos</h2>
+          <h2 className="text-sm font-semibold">
+            {isStandalone ? "Enable notifications" : "Install Soaring Photos"}
+          </h2>
           <p className="mt-1 text-xs text-neutral-500">
             {isIosBrowser
               ? "Use Share, then Add to Home Screen."
-              : "Install once to receive new family post and tag alerts."}
+              : isStandalone
+                ? "Turn on notifications to receive new family post and tag alerts."
+                : "Install once to receive new family post and tag alerts."}
           </p>
         </div>
         {!isIosBrowser && (
@@ -112,7 +119,7 @@ export default function PushNotifications() {
             disabled={status === "saving"}
             className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
-            Install app
+            {isStandalone ? "Enable" : "Install app"}
           </button>
         )}
       </div>
