@@ -4,7 +4,7 @@
     "version": "PTDL_v2"
   },
   "exported_at": "2026-09-05T00:00:00+00:00",
-  "name": "Soaring Photos",
+  "name": "Soaring Photos v1.1.5",
   "author": "admin@example.com",
   "description": "Private, invite-only family photo and video sharing app built with Next.js, Prisma, and SQLite.",
   "features": null,
@@ -12,7 +12,7 @@
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
   },
   "file_denylist": [],
-  "startup": "npm run start -- -p {{SERVER_PORT}}",
+  "startup": "if [ ! -x node_modules/.bin/next ]; then echo 'Installing missing Node.js dependencies...'; npm ci; fi; if [ ! -f .next/BUILD_ID ]; then echo 'Building Next.js production app...'; npm run build; fi; echo 'Applying database migrations...'; npx prisma migrate deploy; echo 'Ensuring initial admin account...'; npm run db:ensure-admin; npm run start -- -p {{SERVER_PORT}}",
   "config": {
     "files": "{}",
     "startup": "{\"done\": \"Ready in\"}",
@@ -21,7 +21,7 @@
   },
   "scripts": {
     "installation": {
-      "script": "#!/bin/bash\nset -e\n\nexport HOME=/mnt/server\n\nif [ -z \"${GIT_REPO}\" ]; then\n  echo \"GIT_REPO must be set to the repository URL.\"\n  exit 1\nfi\n\napt-get update\napt-get install -y --no-install-recommends git ca-certificates\n\ngit clone --depth 1 --branch \"${GIT_BRANCH}\" \"${GIT_REPO}\" .\nnpm ci\nnpx prisma generate\nnpx prisma migrate deploy\nnpm run build\n\nmkdir -p \"${UPLOAD_DIR}\"\n",
+      "script": "#!/bin/bash\nset -e\n\nexport HOME=/mnt/server\n\nif [ -z \"${GIT_REPO}\" ]; then\n  echo \"Installation failed: set Git Repository (GIT_REPO) before reinstalling.\"\n  exit 1\nfi\n\nif [ -z \"${GIT_BRANCH}\" ]; then\n  echo \"Installation failed: set Git Branch (GIT_BRANCH) before reinstalling.\"\n  exit 1\nfi\n\necho \"Cloning branch ${GIT_BRANCH} from ${GIT_REPO}\"\napt-get update\napt-get install -y --no-install-recommends git ca-certificates rsync\n\nrm -rf /tmp/soaring-photos\ngit clone --depth 1 --branch \"${GIT_BRANCH}\" \"${GIT_REPO}\" /tmp/soaring-photos\nrsync -a --delete --exclude=uploads --exclude=dev.db /tmp/soaring-photos/ /mnt/server/\ncd /mnt/server\nnpm ci\nnpx prisma generate\nnpx prisma migrate deploy\nnpm run build\n\nmkdir -p \"${UPLOAD_DIR}\"\n",
       "container": "ghcr.io/parkervcp/installers:debian",
       "entrypoint": "bash"
     }
@@ -59,9 +59,9 @@
     },
     {
       "name": "Database URL",
-      "description": "Keep the default to store the SQLite database in the server's persistent directory.",
+      "description": "Keep the default to store the SQLite database at /home/container/dev.db.",
       "env_variable": "DATABASE_URL",
-      "default_value": "file:./prisma/dev.db",
+      "default_value": "file:../dev.db",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string|max:255",
@@ -109,12 +109,12 @@
     },
     {
       "name": "Admin Password",
-      "description": "Used only when manually running npm run db:seed for the first time. Choose a strong password.",
+      "description": "Required. Used to create the initial admin account if it does not exist. Choose a strong password.",
       "env_variable": "ADMIN_PASSWORD",
       "default_value": "",
       "user_viewable": false,
       "user_editable": true,
-      "rules": "nullable|string|min:12|max:255",
+      "rules": "required|string|min:12|max:255",
       "field_type": "text"
     },
     {
