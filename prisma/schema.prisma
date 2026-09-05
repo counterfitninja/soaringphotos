@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  role         String   @default("member") // "admin" | "member"
+  createdAt    DateTime @default(now())
+
+  posts          Post[]
+  likes          Like[]
+  comments       Comment[]
+  invitesCreated Invite[]     @relation("InviteCreatedBy")
+  inviteUsed     Invite?      @relation("InviteUsedBy")
+  sharesSent     SharedPost[] @relation("ShareFrom")
+  sharesReceived SharedPost[] @relation("ShareTo")
+  notifications  Notification[] @relation("NotificationUser")
+  notificationsSent Notification[] @relation("NotificationActor")
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  createdById String
+  createdBy   User      @relation("InviteCreatedBy", fields: [createdById], references: [id])
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteUsedBy", fields: [usedById], references: [id])
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  caption   String   @default("")
+  createdAt DateTime @default(now())
+
+  media    Media[]
+  likes    Like[]
+  comments Comment[]
+  shares   SharedPost[]
+  notifications Notification[]
+
+  @@index([createdAt])
+}
+
+model Media {
+  id       String @id @default(cuid())
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  key      String // storage key (filename / S3 object key)
+  mimeType String
+  order    Int    @default(0)
+
+  @@index([postId])
+}
+
+model Like {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
+
+model SharedPost {
+  id         String    @id @default(cuid())
+  postId     String
+  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  fromUserId String
+  fromUser   User      @relation("ShareFrom", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User      @relation("ShareTo", fields: [toUserId], references: [id])
+  message    String    @default("")
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+
+  @@index([toUserId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User      @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, postId, type])
+  @@index([userId, createdAt])
+}

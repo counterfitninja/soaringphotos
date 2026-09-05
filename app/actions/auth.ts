@@ -1,0 +1,87 @@
+"use server";
+
+import bcrypt from "bcryptjs";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { registerSchema } from "@/lib/validation";
+
+export type AuthState = { error?: string } | null;
+
+export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const identifier = String(formData.get("identifier") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  if (!identifier || !password) {
+    return { error: "Please enter your username/email and password." };
+  }
+
+  const user = await db.user.findFirst({
+    where: { OR: [{ username: identifier }, { email: identifier.toLowerCase() }] },
+  });
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    return { error: "Invalid credentials. Please try again." };
+  }
+
+  const session = await getSession();
+  session.userId = user.id;
+  session.username = user.username;
+  session.role = user.role;
+  await session.save();
+
+  redirect("/");
+}
+
+export async function logout() {
+  const session = await getSession();
+  session.destroy();
+  redirect("/login");
+}
+
+export async function register(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const token = String(formData.get("token") ?? "");
+  if (formData.get("confirmAccount") !== "on") {
+    return { error: "Please confirm that you want to create this account." };
+  }
+
+  const parsed = registerSchema.safeParse({
+    username: String(formData.get("username") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim(),
+    password: String(formData.get("password") ?? ""),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Please check your details." };
+  }
+  const { username, email, password } = parsed.data;
+
+  const invite = await db.invite.findUnique({ where: { token } });
+  if (!invite || invite.usedAt || invite.expiresAt < new Date()) {
+    return { error: "This invite link is invalid, already used, or expired." };
+  }
+
+  const existing = await db.user.findFirst({
+    where: { OR: [{ username }, { email: email.toLowerCase() }] },
+  });
+  if (existing) {
+    return { error: "That username or email is already taken." };
+  }
+
+  const user = await db.user.create({
+    data: {
+      username,
+      email: email.toLowerCase(),
+      passwordHash: await bcrypt.hash(password, 10),
+    },
+  });
+  await db.invite.update({
+    where: { id: invite.id },
+    data: { usedAt: new Date(), usedById: user.id },
+  });
+
+  const session = await getSession();
+  session.userId = user.id;
+  session.username = user.username;
+  session.role = user.role;
+  await session.save();
+
+  redirect("/");
+}
