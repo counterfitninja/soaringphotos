@@ -93,3 +93,9 @@ export async function sendTestPushAsAdmin(targetUserId?: string) {
   revalidatePath("/admin");
   return result;
 }
+
+export async function deletePushSubscriptionAsAdmin(subscriptionId: string) {
+  await requireAdmin();
+  await db.pushSubscription.deleteMany({ where: { id: subscriptionId } });
+  revalidatePath("/admin");
+}

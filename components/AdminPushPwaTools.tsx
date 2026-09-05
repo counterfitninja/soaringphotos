@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { sendTestPushAsAdmin } from "@/app/actions/admin";
+import { deletePushSubscriptionAsAdmin, sendTestPushAsAdmin } from "@/app/actions/admin";
 
 interface InstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -306,7 +306,7 @@ export default function AdminPushPwaTools({
       )}
 
       <div className="overflow-x-auto rounded-xl border border-neutral-200">
-        <table className="w-full min-w-[700px] text-left text-xs">
+        <table className="w-full min-w-[780px] text-left text-xs">
           <thead className="bg-neutral-50 uppercase text-neutral-400">
             <tr>
               <th className="px-3 py-2 font-medium">Account</th>
@@ -314,12 +314,13 @@ export default function AdminPushPwaTools({
               <th className="px-3 py-2 font-medium">Browser / device</th>
               <th className="px-3 py-2 font-medium">Endpoint</th>
               <th className="px-3 py-2 font-medium">Last updated</th>
+              <th className="px-3 py-2 font-medium"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 text-neutral-700">
             {subscriptions.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-3 text-neutral-500">No active subscriptions.</td>
+                <td colSpan={6} className="px-3 py-3 text-neutral-500">No active subscriptions.</td>
               </tr>
             ) : (
               subscriptions.map((subscription) => (
@@ -331,6 +332,20 @@ export default function AdminPushPwaTools({
                   </td>
                   <td className="px-3 py-2 font-mono text-neutral-500">...{subscription.endpointFingerprint}</td>
                   <td className="px-3 py-2 text-neutral-500" title={`Created ${subscription.createdAt}`}>{subscription.updatedAt}</td>
+                  <td className="px-3 py-2 text-right">
+                    <form
+                      action={deletePushSubscriptionAsAdmin.bind(null, subscription.id)}
+                      onSubmit={(event) => {
+                        if (!window.confirm(`Delete the push subscription for @${subscription.username}? The device will need to subscribe again.`)) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <button className="font-medium text-red-600 hover:text-red-800" title="Delete this push subscription">
+                        Delete
+                      </button>
+                    </form>
+                  </td>
                 </tr>
               ))
             )}
