@@ -45,20 +45,33 @@ export default function UploadForm() {
 
   async function onSelect(list: FileList | null) {
     setError(null);
-    if (!list) return;
+    if (!list || list.length === 0) return;
     const selected = Array.from(list);
 
-    const check = validateMediaFiles(selected);
+    const video = selected.find((f) => isVideo(f));
+    // A post is either one video or a set of images, so a video always
+    // replaces the selection; images are appended to the current images.
+    const next = video
+      ? selected
+      : [
+          ...files.filter((f) => !isVideo(f)),
+          ...selected.filter(
+            (f) =>
+              !isVideo(f) &&
+              !files.some((e) => e.name === f.name && e.size === f.size),
+          ),
+        ];
+
+    const check = validateMediaFiles(next);
     if (check.error) {
       setError(check.error);
       return;
     }
-    const video = selected.find((f) => isVideo(f));
     if (video && !(await checkVideoDuration(video))) {
       setError(`Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter.`);
       return;
     }
-    setFiles(selected);
+    setFiles(next);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -118,7 +131,10 @@ export default function UploadForm() {
           accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
           multiple
           className="hidden"
-          onChange={(e) => onSelect(e.target.files)}
+          onChange={(e) => {
+            onSelect(e.target.files);
+            e.target.value = ""; // allow picking the same file again
+          }}
         />
         <input
           id="media-camera"
@@ -126,11 +142,14 @@ export default function UploadForm() {
           accept="image/*,video/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => onSelect(e.target.files)}
+          onChange={(e) => {
+            onSelect(e.target.files);
+            e.target.value = ""; // allow picking the same file again
+          }}
         />
         <p className="mt-1.5 text-xs text-neutral-400">
           Up to {MAX_IMAGES_PER_POST} images (10 MB each) or 1 video up to {MAX_VIDEO_SECONDS}s /
-          100 MB. Selecting a video replaces any other files.
+          100 MB. Choose again to add more photos. Selecting a video replaces any other files.
         </p>
       </div>
 
