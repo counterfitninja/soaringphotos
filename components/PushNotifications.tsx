@@ -26,7 +26,8 @@ export default function PushNotifications() {
 
     void navigator.serviceWorker.register("/sw.js");
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const standalone = window.matchMedia("(display-mode: standalone)").matches;
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
     setIsIosBrowser(ios && !standalone);
 
     void fetch("/api/push/subscription")
@@ -44,8 +45,17 @@ export default function PushNotifications() {
       setShowPrompt(true);
     }
 
+    function hideInstallPrompt() {
+      setInstallPrompt(null);
+      setShowPrompt(false);
+    }
+
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+    window.addEventListener("appinstalled", hideInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+      window.removeEventListener("appinstalled", hideInstallPrompt);
+    };
   }, []);
 
   async function subscribeToPush() {
