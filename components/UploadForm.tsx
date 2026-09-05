@@ -123,7 +123,7 @@ export default function UploadForm() {
         <input
           id="media-camera"
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+          accept="image/*,video/*"
           capture="environment"
           className="hidden"
           onChange={(e) => onSelect(e.target.files)}
