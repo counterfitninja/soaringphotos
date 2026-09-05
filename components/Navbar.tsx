@@ -14,7 +14,7 @@ export default function Navbar({
 }) {
   return (
     <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
-      <nav className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
+      <nav className="mx-auto flex max-w-xl items-center justify-between px-4 py-3 lg:max-w-6xl">
         <Link href="/" className="text-lg font-bold text-sky-700">
           🦅 Soaring Photos
         </Link>
