@@ -45,6 +45,27 @@ export async function resetUserPasswordAsAdmin(userId: string, formData: FormDat
   revalidatePath("/admin");
 }
 
+export async function setUserAdminRoleAsAdmin(userId: string, role: "admin" | "member") {
+  const admin = await requireAdmin();
+  if (admin.id === userId && role !== "admin") {
+    throw new Error("You cannot remove your own admin access.");
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+  if (!user) return;
+
+  if (user.role === "admin" && role !== "admin" && await db.user.count({ where: { role: "admin" } }) <= 1) {
+    throw new Error("At least one admin account must remain.");
+  }
+
+  await db.user.update({ where: { id: user.id }, data: { role } });
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export async function deleteUserAsAdmin(userId: string) {
   const admin = await requireAdmin();
   if (admin.id === userId) {

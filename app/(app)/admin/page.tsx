@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deletePostAsAdmin, resetUserPasswordAsAdmin } from "@/app/actions/admin";
+import { deletePostAsAdmin, resetUserPasswordAsAdmin, setUserAdminRoleAsAdmin } from "@/app/actions/admin";
 import { createInvite, deleteInvite } from "@/app/actions/invites";
 import AdminPushPwaTools from "@/components/AdminPushPwaTools";
 import CopyInviteLink from "@/components/CopyInviteLink";
@@ -276,6 +276,11 @@ export default async function AdminPage() {
                             className="w-32 rounded-lg border border-neutral-200 px-2 py-1 text-xs outline-none focus:border-sky-500"
                           />
                           <button className="text-xs font-medium text-sky-700 hover:text-sky-900">Reset</button>
+                        </form>
+                        <form action={setUserAdminRoleAsAdmin.bind(null, user.id, user.role === "admin" ? "member" : "admin")}>
+                          <button className="text-xs font-medium text-neutral-600 hover:text-neutral-900">
+                            {user.role === "admin" ? "Remove admin" : "Make admin"}
+                          </button>
                         </form>
                         <DeleteUserButton userId={user.id} username={user.username} />
                       </div>
