@@ -21,11 +21,19 @@ function formatBytes(bytes: number | null) {
   return `${value >= 10 || exponent === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[exponent]}`;
 }
 
+function pushProvider(endpoint: string) {
+  const hostname = new URL(endpoint).hostname;
+  if (hostname.includes("fcm.googleapis.com")) return "Google FCM";
+  if (hostname.includes("mozilla.com")) return "Mozilla";
+  if (hostname.includes("windows.com")) return "Microsoft WNS";
+  return hostname;
+}
+
 export default async function AdminPage() {
   const admin = await requireAdmin();
   const now = new Date();
 
-  const [users, recentPosts, allMedia, invites, totals] = await Promise.all([
+  const [users, recentPosts, allMedia, invites, pushSubscriptions, totals] = await Promise.all([
     db.user.findMany({
       select: {
         id: true,
@@ -61,6 +69,17 @@ export default async function AdminPage() {
     db.invite.findMany({
       include: { usedBy: { select: { username: true } } },
       orderBy: { createdAt: "desc" },
+    }),
+    db.pushSubscription.findMany({
+      select: {
+        id: true,
+        endpoint: true,
+        userAgent: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { username: true } },
+      },
+      orderBy: { updatedAt: "desc" },
     }),
     Promise.all([
       db.post.count(),
@@ -131,7 +150,19 @@ export default async function AdminPage() {
             Check installation status, test local/server push notifications, and trigger PWA prompt.
           </p>
         </div>
-        <AdminPushPwaTools isVapidConfigured={pushConfigured} totalSubscriptions={pushSubCount} />
+        <AdminPushPwaTools
+          isVapidConfigured={pushConfigured}
+          totalSubscriptions={pushSubCount}
+          subscriptions={pushSubscriptions.map((subscription) => ({
+            id: subscription.id,
+            username: subscription.user.username,
+            provider: pushProvider(subscription.endpoint),
+            endpointFingerprint: subscription.endpoint.slice(-18),
+            userAgent: subscription.userAgent,
+            createdAt: subscription.createdAt.toLocaleString(),
+            updatedAt: subscription.updatedAt.toLocaleString(),
+          }))}
+        />
       </section>
 
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">

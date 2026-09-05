@@ -18,9 +18,19 @@ function decodeVapidKey(key: string) {
 export default function AdminPushPwaTools({
   isVapidConfigured,
   totalSubscriptions,
+  subscriptions,
 }: {
   isVapidConfigured: boolean;
   totalSubscriptions: number;
+  subscriptions: {
+    id: string;
+    username: string;
+    provider: string;
+    endpointFingerprint: string;
+    userAgent: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }) {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -294,6 +304,39 @@ export default function AdminPushPwaTools({
           <p className="font-medium">{testResult}</p>
         </div>
       )}
+
+      <div className="overflow-x-auto rounded-xl border border-neutral-200">
+        <table className="w-full min-w-[700px] text-left text-xs">
+          <thead className="bg-neutral-50 uppercase text-neutral-400">
+            <tr>
+              <th className="px-3 py-2 font-medium">Account</th>
+              <th className="px-3 py-2 font-medium">Push provider</th>
+              <th className="px-3 py-2 font-medium">Browser / device</th>
+              <th className="px-3 py-2 font-medium">Endpoint</th>
+              <th className="px-3 py-2 font-medium">Last updated</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100 text-neutral-700">
+            {subscriptions.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-3 py-3 text-neutral-500">No active subscriptions.</td>
+              </tr>
+            ) : (
+              subscriptions.map((subscription) => (
+                <tr key={subscription.id}>
+                  <td className="px-3 py-2 font-medium">@{subscription.username}</td>
+                  <td className="px-3 py-2">{subscription.provider}</td>
+                  <td className="max-w-72 truncate px-3 py-2" title={subscription.userAgent ?? undefined}>
+                    {subscription.userAgent ?? "Recorded before device details"}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-neutral-500">...{subscription.endpointFingerprint}</td>
+                  <td className="px-3 py-2 text-neutral-500" title={`Created ${subscription.createdAt}`}>{subscription.updatedAt}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* iOS Install Instructions Modal / Card */}
       {showIosGuide && (

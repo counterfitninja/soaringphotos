@@ -42,17 +42,20 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid push subscription." }, { status: 400 });
 
   const subscription = parsed.data;
+  const userAgent = request.headers.get("user-agent")?.slice(0, 512) ?? null;
   await db.pushSubscription.upsert({
     where: { endpoint: subscription.endpoint },
     create: {
       userId,
       endpoint: subscription.endpoint,
+      userAgent,
       p256dh: subscription.keys.p256dh,
       auth: subscription.keys.auth,
       expirationTime: subscription.expirationTime ? new Date(subscription.expirationTime) : null,
     },
     update: {
       userId,
+      userAgent,
       p256dh: subscription.keys.p256dh,
       auth: subscription.keys.auth,
       expirationTime: subscription.expirationTime ? new Date(subscription.expirationTime) : null,

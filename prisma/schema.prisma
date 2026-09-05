@@ -126,6 +126,7 @@ model PushSubscription {
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   endpoint       String   @unique
+  userAgent      String?
   p256dh         String
   auth           String
   expirationTime DateTime?
