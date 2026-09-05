@@ -3,8 +3,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title ?? "Soaring Photos", {
       body: data.body ?? "You have a new notification.",
-      icon: "/icon",
-      badge: "/icon",
+      icon: "/logo.jpeg",
+      badge: "/logo.jpeg",
       tag: data.tag,
       data: { url: data.url ?? "/notifications" },
     }),

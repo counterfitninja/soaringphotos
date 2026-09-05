@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { createCommentNotifications } from "@/lib/notifications";
 import { commentSchema } from "@/lib/validation";
 
 export type CommentState = { error?: string; success?: boolean } | null;
@@ -24,6 +25,8 @@ export async function addComment(
   await db.comment.create({
     data: { postId, authorId: user.id, text: parsed.data },
   });
+
+  await createCommentNotifications({ postId, authorId: user.id, text: parsed.data });
 
   revalidatePath("/");
   revalidatePath(`/post/${postId}`);

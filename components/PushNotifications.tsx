@@ -27,17 +27,23 @@ export default function PushNotifications() {
 
     void navigator.serviceWorker.register("/sw.js");
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const standalone = window.matchMedia("(display-mode: standalone)").matches
-      || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+
     setIsStandalone(standalone);
     setIsIosBrowser(ios && !standalone);
+
+    const isDismissed = localStorage.getItem("pwa_prompt_dismissed") === "true";
 
     void fetch("/api/push/subscription")
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (!data?.configured || data.subscribed) return;
         setPublicKey(data.publicKey);
-        if (ios || standalone) setShowPrompt(true);
+        if ((ios || standalone) && !isDismissed) {
+          setShowPrompt(true);
+        }
       })
       .catch(() => setStatus("error"));
 
@@ -45,7 +51,9 @@ export default function PushNotifications() {
       event.preventDefault();
       if (standalone) return;
       setInstallPrompt(event as InstallPromptEvent);
-      setShowPrompt(true);
+      if (!isDismissed) {
+        setShowPrompt(true);
+      }
     }
 
     function hideInstallPrompt() {
@@ -53,11 +61,18 @@ export default function PushNotifications() {
       setShowPrompt(false);
     }
 
+    function handleResetBanner() {
+      setShowPrompt(true);
+    }
+
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("appinstalled", hideInstallPrompt);
+    window.addEventListener("reset-pwa-banner", handleResetBanner);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
       window.removeEventListener("appinstalled", hideInstallPrompt);
+      window.removeEventListener("reset-pwa-banner", handleResetBanner);
     };
   }, []);
 
@@ -83,7 +98,9 @@ export default function PushNotifications() {
         await installPrompt.prompt();
         const choice = await installPrompt.userChoice;
         setInstallPrompt(null);
-        if (choice.outcome === "accepted") setShowPrompt(false);
+        if (choice.outcome === "accepted") {
+          setShowPrompt(false);
+        }
       } else if (!isIosBrowser) {
         const permission = await Notification.requestPermission();
         if (permission === "granted") await subscribeToPush();
@@ -95,35 +112,50 @@ export default function PushNotifications() {
     }
   }
 
+  function handleDismiss() {
+    localStorage.setItem("pwa_prompt_dismissed", "true");
+    setShowPrompt(false);
+  }
+
   if (!showPrompt) return null;
 
   return (
     <aside className="fixed inset-x-4 bottom-24 z-20 mx-auto max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-lg sm:bottom-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">
             {isStandalone ? "Enable notifications" : "Install Soaring Photos"}
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
             {isIosBrowser
-              ? "Use Share, then Add to Home Screen."
+              ? "Use Safari Share button, then tap 'Add to Home Screen'."
               : isStandalone
                 ? "Turn on notifications to receive new family post and tag alerts."
                 : "Install once to receive new family post and tag alerts."}
           </p>
         </div>
-        {!isIosBrowser && (
+        <div className="flex items-center gap-2 shrink-0">
+          {!isIosBrowser && (
+            <button
+              type="button"
+              onClick={installApp}
+              disabled={status === "saving"}
+              className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            >
+              {isStandalone ? "Enable" : "Install app"}
+            </button>
+          )}
           <button
             type="button"
-            onClick={installApp}
-            disabled={status === "saving"}
-            className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            onClick={handleDismiss}
+            aria-label="Dismiss banner"
+            className="rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
           >
-            {isStandalone ? "Enable" : "Install app"}
+            ✕
           </button>
-        )}
+        </div>
       </div>
-      {status === "error" && <p className="mt-3 text-xs text-red-600">Installation could not be completed.</p>}
+      {status === "error" && <p className="mt-2 text-xs text-red-600">Installation could not be completed.</p>}
     </aside>
   );
 }

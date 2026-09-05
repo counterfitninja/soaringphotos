@@ -90,3 +90,83 @@ export async function sendPushNotifications({
     }),
   );
 }
+
+export async function sendTestPushNotification(targetUserId?: string): Promise<{
+  success: boolean;
+  sentCount: number;
+  failedCount: number;
+  message: string;
+}> {
+  if (!isPushConfigured() || !publicKey || !privateKey) {
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: 0,
+      message: "Push notifications are not configured on server (VAPID keys missing or invalid).",
+    };
+  }
+
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+  } catch (error) {
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: 0,
+      message: `Failed to configure VAPID: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+
+  const subscriptions = await db.pushSubscription.findMany({
+    where: targetUserId ? { userId: targetUserId } : undefined,
+    include: { user: { select: { username: true } } },
+  });
+
+  if (subscriptions.length === 0) {
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: 0,
+      message: targetUserId
+        ? "No active push subscriptions found for target user."
+        : "No active push subscriptions found in database.",
+    };
+  }
+
+  let sentCount = 0;
+  let failedCount = 0;
+
+  await Promise.allSettled(
+    subscriptions.map(async (subscription) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            expirationTime: subscription.expirationTime?.getTime() ?? null,
+            keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+          },
+          JSON.stringify({
+            title: "🔔 Soaring Photos Test",
+            body: `Test notification sent at ${new Date().toLocaleTimeString()} for @${subscription.user.username}!`,
+            url: "/notifications",
+            tag: `test-push-${Date.now()}`,
+          }),
+        );
+        sentCount++;
+      } catch (error) {
+        failedCount++;
+        const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
+        if (statusCode === 404 || statusCode === 410) {
+          await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
+        }
+      }
+    }),
+  );
+
+  return {
+    success: sentCount > 0,
+    sentCount,
+    failedCount,
+    message: `Sent test push notification to ${sentCount} device(s). ${failedCount > 0 ? `(${failedCount} failed/expired)` : ""}`,
+  };
+}

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { deletePostAsAdmin, resetUserPasswordAsAdmin } from "@/app/actions/admin";
 import { createInvite, deleteInvite } from "@/app/actions/invites";
+import AdminPushPwaTools from "@/components/AdminPushPwaTools";
 import CopyInviteLink from "@/components/CopyInviteLink";
 import DeleteUserButton from "@/components/DeleteUserButton";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isPushConfigured } from "@/lib/push";
 import { getMediaMetadata } from "@/lib/storage";
 import { btnSmall } from "@/lib/ui";
 import { timeAgo } from "@/lib/utils";
@@ -66,6 +68,7 @@ export default async function AdminPage() {
       db.like.count(),
       db.sharedPost.count(),
       db.notification.count({ where: { readAt: null } }),
+      db.pushSubscription.count(),
     ]),
   ]);
 
@@ -80,8 +83,9 @@ export default async function AdminPage() {
   const unknownFiles = mediaSizes.filter((media) => media.size === null).length;
   const imageCount = allMedia.filter((media) => media.mimeType.startsWith("image/")).length;
   const videoCount = allMedia.filter((media) => media.mimeType.startsWith("video/")).length;
-  const [postCount, commentCount, likeCount, shareCount, unreadAlertCount] = totals;
+  const [postCount, commentCount, likeCount, shareCount, unreadAlertCount, pushSubCount] = totals;
   const activeInviteCount = invites.filter((invite) => !invite.usedAt && invite.expiresAt > now).length;
+  const pushConfigured = isPushConfigured();
   const largestFiles = mediaSizes
     .filter((media): media is typeof media & { size: number } => media.size !== null)
     .sort((first, second) => second.size - first.size)
@@ -92,8 +96,7 @@ export default async function AdminPage() {
     { label: "Posts", value: postCount.toString(), detail: `${recentPosts.length} shown below` },
     { label: "Files", value: allMedia.length.toString(), detail: `${imageCount} images, ${videoCount} videos` },
     { label: "Storage", value: formatBytes(knownStorageBytes), detail: unknownFiles > 0 ? `${unknownFiles} unknown sizes` : "All file sizes known" },
-    { label: "Comments", value: commentCount.toString(), detail: `${likeCount} likes` },
-    { label: "Shares", value: shareCount.toString(), detail: `${unreadAlertCount} unread alerts` },
+    { label: "Push Devices", value: pushSubCount.toString(), detail: pushConfigured ? "VAPID configured" : "VAPID missing" },
     { label: "Active invites", value: activeInviteCount.toString(), detail: "Unused and unexpired" },
   ];
 
@@ -119,6 +122,16 @@ export default async function AdminPage() {
             <p className="mt-1 text-xs text-neutral-500">{stat.detail}</p>
           </div>
         ))}
+      </section>
+
+      <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-sm space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold">PWA & Push Notifications Diagnostic & Tools</h2>
+          <p className="mt-0.5 text-xs text-neutral-500">
+            Check installation status, test local/server push notifications, and trigger PWA prompt.
+          </p>
+        </div>
+        <AdminPushPwaTools isVapidConfigured={pushConfigured} totalSubscriptions={pushSubCount} />
       </section>
 
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">

@@ -85,3 +85,11 @@ export async function deleteUserAsAdmin(userId: string) {
   revalidatePath("/");
   revalidatePath(`/profile/${user.username}`);
 }
+
+export async function sendTestPushAsAdmin(targetUserId?: string) {
+  await requireAdmin();
+  const { sendTestPushNotification } = await import("@/lib/push");
+  const result = await sendTestPushNotification(targetUserId);
+  revalidatePath("/admin");
+  return result;
+}

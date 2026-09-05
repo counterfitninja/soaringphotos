@@ -77,7 +77,7 @@ export default async function NotificationsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">
                       <span className="font-semibold">{notification.actor.username}</span>{" "}
-                      {notification.type === "mention" ? "tagged you in a post" : "added a new post"}
+                      {notification.type === "mention" ? "mentioned you" : "added a new post"}
                     </p>
                     <p className="mt-1 text-xs text-neutral-400">
                       {timeAgo(notification.createdAt)}

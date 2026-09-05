@@ -58,3 +58,43 @@ export async function createPostNotifications({
     await sendPushNotifications({ recipients: recipientsWithType, actorUsername: author.username, caption, postId });
   }
 }
+
+export async function createCommentNotifications({
+  postId,
+  authorId,
+  text,
+}: {
+  postId: string;
+  authorId: string;
+  text: string;
+}) {
+  const mentionedUsernames = new Set(extractMentionedUsernames(text));
+  if (mentionedUsernames.size === 0) return;
+
+  const users = await db.user.findMany({
+    where: { id: { not: authorId } },
+    select: { id: true, username: true },
+  });
+  // Mentions always notify, even if the recipient muted the author's regular posts.
+  const recipients = users
+    .filter((user) => mentionedUsernames.has(user.username.toLowerCase()))
+    .map((user) => ({ id: user.id, type: "mention" as const }));
+
+  if (recipients.length === 0) return;
+
+  // (userId, postId, type) is unique, so a repeat mention upserts: re-mark unread and point at the latest actor.
+  await Promise.all(
+    recipients.map((recipient) =>
+      db.notification.upsert({
+        where: { userId_postId_type: { userId: recipient.id, postId, type: "mention" } },
+        update: { readAt: null, actorId: authorId, createdAt: new Date() },
+        create: { userId: recipient.id, actorId: authorId, postId, type: "mention" },
+      }),
+    ),
+  );
+
+  const author = await db.user.findUnique({ where: { id: authorId }, select: { username: true } });
+  if (author) {
+    await sendPushNotifications({ recipients, actorUsername: author.username, caption: text, postId });
+  }
+}

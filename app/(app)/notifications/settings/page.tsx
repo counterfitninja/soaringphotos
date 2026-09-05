@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { setUserNotificationMute } from "@/app/actions/notifications";
+import PushSubscriptionControl from "@/components/PushSubscriptionControl";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -23,6 +24,8 @@ export default async function NotificationSettingsPage() {
           Back
         </Link>
       </div>
+
+      <PushSubscriptionControl />
 
       <p className="text-sm text-neutral-500">
         Choose which family members you get notified about when they post. You&apos;ll still get notified any time
