@@ -100,7 +100,7 @@ export default async function AdminPage() {
           </p>
         </div>
         <Link href="/admin/invites" className={btnSmall}>
-          Manage invites
+          Invite members
         </Link>
       </div>
 
