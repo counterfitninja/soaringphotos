@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 
 const publicKey = process.env.VAPID_PUBLIC_KEY;
 const privateKey = process.env.VAPID_PRIVATE_KEY;
-const subject = process.env.VAPID_SUBJECT ?? "mailto:admin@soaring.photos";
+const configuredSubject = process.env.VAPID_SUBJECT?.trim();
+const subject = configuredSubject
+  ? configuredSubject.includes(":")
+    ? configuredSubject
+    : `mailto:${configuredSubject}`
+  : "mailto:admin@soaring.photos";
 
 export function isPushConfigured() {
   return Boolean(publicKey && privateKey);
