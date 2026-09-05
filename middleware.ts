@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sessionOptions } from "@/lib/session";
 
-const PUBLIC_PREFIXES = ["/login", "/invite"];
+const PUBLIC_PREFIXES = ["/login", "/invite", "/icons"];
 const PUBLIC_ASSETS = [
   "/manifest.webmanifest",
   "/sw.js",
