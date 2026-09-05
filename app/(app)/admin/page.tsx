@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { deletePostAsAdmin } from "@/app/actions/admin";
+import { deletePostAsAdmin, resetUserPasswordAsAdmin } from "@/app/actions/admin";
 import { createInvite, deleteInvite } from "@/app/actions/invites";
 import CopyInviteLink from "@/components/CopyInviteLink";
+import DeleteUserButton from "@/components/DeleteUserButton";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getMediaMetadata } from "@/lib/storage";
@@ -19,7 +20,7 @@ function formatBytes(bytes: number | null) {
 }
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const now = new Date();
 
   const [users, recentPosts, allMedia, invites, totals] = await Promise.all([
@@ -184,7 +185,7 @@ export default async function AdminPage() {
           <p className="mt-1 text-xs text-neutral-500">Post, comment, like, and share totals by account.</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="bg-neutral-50 text-xs uppercase text-neutral-400">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
@@ -194,6 +195,7 @@ export default async function AdminPage() {
                 <th className="px-4 py-3 font-medium">Comments</th>
                 <th className="px-4 py-3 font-medium">Likes</th>
                 <th className="px-4 py-3 font-medium">Shares</th>
+                <th className="px-4 py-3 font-medium">Account</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -212,6 +214,28 @@ export default async function AdminPage() {
                   <td className="px-4 py-3 text-neutral-600">{user._count.likes}</td>
                   <td className="px-4 py-3 text-neutral-600">
                     {user._count.sharesSent + user._count.sharesReceived}
+                  </td>
+                  <td className="px-4 py-3">
+                    {user.id === admin.id ? (
+                      <span className="text-xs text-neutral-400">Current account</span>
+                    ) : (
+                      <div className="flex min-w-[260px] items-center gap-2">
+                        <form action={resetUserPasswordAsAdmin.bind(null, user.id)} className="flex items-center gap-2">
+                          <input
+                            name="password"
+                            type="password"
+                            minLength={8}
+                            maxLength={100}
+                            required
+                            aria-label={`New password for ${user.username}`}
+                            placeholder="New password"
+                            className="w-32 rounded-lg border border-neutral-200 px-2 py-1 text-xs outline-none focus:border-sky-500"
+                          />
+                          <button className="text-xs font-medium text-sky-700 hover:text-sky-900">Reset</button>
+                        </form>
+                        <DeleteUserButton userId={user.id} username={user.username} />
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

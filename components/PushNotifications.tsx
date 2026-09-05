@@ -66,14 +66,14 @@ export default function PushNotifications() {
   async function installApp() {
     setStatus("saving");
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") await subscribeToPush();
-
       if (installPrompt) {
         await installPrompt.prompt();
         const choice = await installPrompt.userChoice;
+        setInstallPrompt(null);
         if (choice.outcome === "accepted") setShowPrompt(false);
       } else if (!isIosBrowser) {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") await subscribeToPush();
         setShowPrompt(false);
       }
       setStatus("idle");
