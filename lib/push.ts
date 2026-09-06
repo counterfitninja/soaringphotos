@@ -116,6 +116,7 @@ export async function sendPushNotifications({
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
           JSON.stringify({ title, body, url: `/post/${postId}`, tag: `post-${postId}` }),
+          { TTL: 60, urgency: "high" },
         );
         pushDebug("sent notification", {
           userId: subscription.userId,
@@ -218,6 +219,7 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
             url: "/notifications",
             tag: `test-push-${Date.now()}`,
           }),
+          { TTL: 60, urgency: "high" },
         );
         sentCount++;
         pushDebug("sent test notification", {
