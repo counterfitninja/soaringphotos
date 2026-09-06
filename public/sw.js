@@ -1,5 +1,13 @@
 self.__soaringSwVersion = "2026-09-06-push-receipts-v2";
 
+function broadcastToWindows(message) {
+  return clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((windowClients) => {
+      windowClients.forEach((client) => client.postMessage(message));
+    });
+}
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
@@ -59,10 +67,10 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "soaring-get-last-push") {
-    event.source?.postMessage({ type: "soaring-last-push", entry: self.__lastPushDebug ?? null });
+    event.waitUntil(broadcastToWindows({ type: "soaring-last-push", entry: self.__lastPushDebug ?? null }));
   }
   if (event.data?.type === "soaring-get-sw-version") {
-    event.source?.postMessage({ type: "soaring-sw-version", version: self.__soaringSwVersion });
+    event.waitUntil(broadcastToWindows({ type: "soaring-sw-version", version: self.__soaringSwVersion }));
   }
 });
 

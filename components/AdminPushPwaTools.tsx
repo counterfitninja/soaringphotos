@@ -67,10 +67,12 @@ export default function AdminPushPwaTools({
   const [lastRemotePush, setLastRemotePush] = useState<PushDebugEntry | null>(null);
   const [serviceWorkerVersion, setServiceWorkerVersion] = useState<string | null>(null);
   const [swControlled, setSwControlled] = useState(false);
+  const [isSecure, setIsSecure] = useState(true);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
 
   useEffect(() => {
+    setIsSecure(window.isSecureContext);
     const swSupport = "serviceWorker" in navigator;
     const pushSupport = swSupport && "PushManager" in window && "Notification" in window;
     setPushSupported(pushSupport);
@@ -373,6 +375,12 @@ export default function AdminPushPwaTools({
                 : "Not controlling this tab yet — reload once")}
           </span>
         </p>
+        {!isSecure && (
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-800">
+            ⚠️ This page is loaded over an insecure context (plain HTTP, non-localhost). Service workers and push
+            notifications are disabled by the browser here. Use localhost or HTTPS.
+          </p>
+        )}
       </div>
 
       {!isVapidConfigured && (
