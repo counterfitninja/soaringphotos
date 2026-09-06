@@ -18,11 +18,16 @@ export default async function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-10">
-      <div className="rounded-3xl border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-4 shadow-sm">
+      <div className="rounded-[28px] border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-4 shadow-[0_18px_40px_-28px_rgba(14,116,144,0.45)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Family feed</p>
-            <h1 className="mt-1 text-xl font-bold text-neutral-900">Notifications</h1>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-sky-500" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-sky-600">
+                Family feed
+              </p>
+            </div>
+            <h1 className="mt-2 text-xl font-bold text-neutral-900">Notifications</h1>
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -34,7 +39,7 @@ export default async function NotificationsPage() {
             {unreadCount > 0 && (
               <form action={markAllNotificationsRead}>
                 <button className="rounded-full bg-sky-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-sky-700">
-                  Mark all read
+                  {unreadCount > 1 ? `${unreadCount} unread` : "Mark all read"}
                 </button>
               </form>
             )}
@@ -64,13 +69,14 @@ export default async function NotificationsPage() {
               <li key={notification.id}>
                 <Link
                   href={`/post/${notification.postId}`}
-                  className={`group flex gap-3 rounded-3xl border bg-white p-2.5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                  className={`group relative flex gap-3 overflow-hidden rounded-[26px] border bg-white p-2.5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                     notification.readAt
                       ? "border-neutral-200"
-                      : "border-sky-200 bg-sky-50/60 ring-1 ring-sky-200"
+                      : "border-sky-200 bg-sky-50/75 ring-1 ring-sky-100"
                   }`}
                 >
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-neutral-200">
+                  <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-sky-400 to-indigo-500 opacity-80" />
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-100 via-neutral-100 to-indigo-100">
                     {media &&
                       (isVideo ? (
                         <video
@@ -87,6 +93,9 @@ export default async function NotificationsPage() {
                           className="h-full w-full object-cover"
                         />
                       ))}
+                    <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/85 text-[10px] font-bold text-sky-700 shadow-sm">
+                      {notification.type === "mention" ? "@" : "•"}
+                    </span>
                     {isVideo && (
                       <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
                         ▶
@@ -94,14 +103,14 @@ export default async function NotificationsPage() {
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1 pt-1">
-                    <div className="flex items-center gap-2">
+                  <div className="relative min-w-0 flex-1 pt-1">
+                    <div className="flex items-start justify-between gap-2">
                       <p className="text-sm leading-5 text-neutral-800">
                         <span className="font-semibold text-neutral-900">{notification.actor.username}</span>{" "}
                         <span>{actionLabel}</span>
                       </p>
                       {!notification.readAt && (
-                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">
                           New
                         </span>
                       )}
@@ -113,9 +122,12 @@ export default async function NotificationsPage() {
                       </p>
                     )}
 
-                    <p className="mt-2 text-[11px] font-medium text-neutral-400">
-                      {timeAgo(notification.createdAt)}
-                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-[11px] font-medium text-neutral-400">{timeAgo(notification.createdAt)}</p>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                        View
+                      </span>
+                    </div>
                   </div>
                 </Link>
               </li>

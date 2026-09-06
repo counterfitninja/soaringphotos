@@ -18,11 +18,14 @@ export default async function NotificationSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-10">
-      <div className="rounded-3xl border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-4 shadow-sm">
+      <div className="rounded-[28px] border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-4 shadow-[0_18px_40px_-28px_rgba(14,116,144,0.45)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Alerts</p>
-            <h1 className="mt-1 text-xl font-bold text-neutral-900">Notification settings</h1>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-sky-500" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-sky-600">Alerts</p>
+            </div>
+            <h1 className="mt-2 text-xl font-bold text-neutral-900">Notification settings</h1>
           </div>
           <Link
             href="/notifications"
@@ -35,7 +38,7 @@ export default async function NotificationSettingsPage() {
 
       <PushSubscriptionControl />
 
-      <div className="rounded-3xl bg-white p-4 shadow-sm">
+      <div className="rounded-[26px] border border-neutral-200 bg-white p-4 shadow-sm">
         <p className="text-sm leading-6 text-neutral-600">
           Choose which family members you get notified about when they post. You&apos;ll still get notified any time
           someone @mentions you, even if you turn off their posts.
@@ -57,13 +60,18 @@ export default async function NotificationSettingsPage() {
             return (
               <li
                 key={otherUser.id}
-                className="flex items-center justify-between gap-3 rounded-3xl border border-neutral-200 bg-white p-3.5 shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-[24px] border border-neutral-200 bg-white p-3.5 shadow-sm transition hover:border-sky-200 hover:shadow-md"
               >
-                <div className="min-w-0">
-                  <span className="text-sm font-semibold text-neutral-800">{otherUser.username}</span>
-                  <p className="text-[11px] text-neutral-500">
-                    {isMuted ? "Muted" : "Alerts enabled"}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-indigo-100 text-sm font-bold text-sky-700">
+                    {otherUser.username.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-sm font-semibold text-neutral-800">{otherUser.username}</span>
+                    <p className="text-[11px] text-neutral-500">
+                      {isMuted ? "Muted" : "Alerts enabled"}
+                    </p>
+                  </div>
                 </div>
                 <form action={toggleMute}>
                   <button
