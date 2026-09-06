@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getPushPublicKey, isPushConfigured } from "@/lib/push";
+import { getPushPublicKey, getPushPublicKeyFingerprint, isPushConfigured } from "@/lib/push";
 import { getSession } from "@/lib/session";
 
 const subscriptionSchema = z.object({
@@ -27,6 +27,7 @@ export async function GET() {
   return NextResponse.json({
     configured: isPushConfigured(),
     publicKey: getPushPublicKey() ?? null,
+    publicKeyFingerprint: getPushPublicKeyFingerprint(),
     subscribed,
   });
 }

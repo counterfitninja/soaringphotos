@@ -15,6 +15,16 @@ function decodeVapidKey(key: string) {
   return Uint8Array.from(bytes, (character) => character.charCodeAt(0));
 }
 
+function encodeVapidKey(bytes: ArrayBuffer) {
+  const binary = String.fromCharCode(...new Uint8Array(bytes));
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function fingerprint(value: string) {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+
 export default function AdminPushPwaTools({
   isVapidConfigured,
   totalSubscriptions,
@@ -40,6 +50,9 @@ export default function AdminPushPwaTools({
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [serverPublicKeyFingerprint, setServerPublicKeyFingerprint] = useState<string | null>(null);
+  const [browserPublicKeyFingerprint, setBrowserPublicKeyFingerprint] = useState<string | null>(null);
+  const [browserEndpointTail, setBrowserEndpointTail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [showIosGuide, setShowIosGuide] = useState(false);
@@ -63,13 +76,24 @@ export default function AdminPushPwaTools({
     setIsIosBrowser(ios && !standalone);
 
     if (swSupport) {
-      navigator.serviceWorker.ready.then(() => setSwRegistered(true)).catch(() => {});
+      navigator.serviceWorker.ready
+        .then(async (registration) => {
+          setSwRegistered(true);
+          const subscription = await registration.pushManager.getSubscription();
+          setBrowserEndpointTail(subscription?.endpoint.slice(-18) ?? null);
+          const applicationServerKey = subscription?.options.applicationServerKey;
+          setBrowserPublicKeyFingerprint(
+            applicationServerKey ? await fingerprint(encodeVapidKey(applicationServerKey)) : null,
+          );
+        })
+        .catch(() => {});
     }
 
     void fetch("/api/push/subscription")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.publicKey) setPublicKey(data.publicKey);
+        if (data?.publicKeyFingerprint) setServerPublicKeyFingerprint(data.publicKeyFingerprint);
         if (data?.subscribed) setIsSubscribed(true);
       })
       .catch(() => {});
@@ -149,6 +173,11 @@ export default function AdminPushPwaTools({
         userVisibleOnly: true,
         applicationServerKey: decodeVapidKey(keyToUse),
       });
+      setBrowserEndpointTail(subscription.endpoint.slice(-18));
+      const applicationServerKey = subscription.options.applicationServerKey;
+      setBrowserPublicKeyFingerprint(
+        applicationServerKey ? await fingerprint(encodeVapidKey(applicationServerKey)) : null,
+      );
 
       const saveRes = await fetch("/api/push/subscription", {
         method: "POST",
@@ -251,6 +280,27 @@ export default function AdminPushPwaTools({
             )}
           </p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-700">
+        <p className="font-semibold text-neutral-900">VAPID key diagnostic</p>
+        <dl className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div>
+            <dt className="text-[11px] font-medium uppercase text-neutral-400">Server public key</dt>
+            <dd className="mt-1 font-mono">{serverPublicKeyFingerprint ?? "Unavailable"}</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium uppercase text-neutral-400">Browser subscription key</dt>
+            <dd className="mt-1 font-mono">{browserPublicKeyFingerprint ?? "No local subscription"}</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium uppercase text-neutral-400">Browser endpoint</dt>
+            <dd className="mt-1 font-mono">{browserEndpointTail ? `...${browserEndpointTail}` : "No local subscription"}</dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-neutral-500">
+          Matching fingerprints mean this browser subscription was created with the server's current VAPID public key.
+        </p>
       </div>
 
       {!isVapidConfigured && (

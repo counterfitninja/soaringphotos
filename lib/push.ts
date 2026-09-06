@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 
 // Some hosting UIs store env values with surrounding quotes/whitespace; strip those defensively.
@@ -32,12 +33,21 @@ if (publicKey && privateKey && !vapidConfigured) {
   console.error("VAPID_PUBLIC_KEY is invalid (must decode to 65 bytes); push notifications are disabled.");
 }
 
+function shouldDeleteRejectedSubscription(statusCode: number | undefined) {
+  return statusCode === 401 || statusCode === 403 || statusCode === 404 || statusCode === 410;
+}
+
 export function isPushConfigured() {
   return vapidConfigured;
 }
 
 export function getPushPublicKey() {
   return publicKey;
+}
+
+export function getPushPublicKeyFingerprint() {
+  if (!publicKey) return null;
+  return createHash("sha256").update(publicKey).digest("hex").slice(0, 16);
 }
 
 export async function sendPushNotifications({
@@ -81,7 +91,7 @@ export async function sendPushNotifications({
         );
       } catch (error) {
         const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
-        if (statusCode === 404 || statusCode === 410) {
+        if (shouldDeleteRejectedSubscription(statusCode)) {
           await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
         } else {
           console.error("Failed to send push notification", error);
@@ -135,7 +145,7 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
 
   let sentCount = 0;
   let failedCount = 0;
-  let expiredCount = 0;
+  let invalidSubscriptionCount = 0;
   const failureDetails: string[] = [];
 
   await Promise.allSettled(
@@ -158,8 +168,8 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
       } catch (error) {
         failedCount++;
         const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
-        if (statusCode === 404 || statusCode === 410) {
-          expiredCount++;
+        if (shouldDeleteRejectedSubscription(statusCode)) {
+          invalidSubscriptionCount++;
           await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
         } else if (failureDetails.length < 3) {
           const provider = new URL(subscription.endpoint).hostname;
@@ -171,8 +181,10 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
   );
 
   const parts = [`Sent test push notification to ${sentCount} device(s).`];
-  if (expiredCount > 0) parts.push(`Removed ${expiredCount} expired subscription(s); re-enable push on those devices.`);
-  const otherFailures = failedCount - expiredCount;
+  if (invalidSubscriptionCount > 0) {
+    parts.push(`Removed ${invalidSubscriptionCount} invalid subscription(s); re-enable push on those devices.`);
+  }
+  const otherFailures = failedCount - invalidSubscriptionCount;
   if (otherFailures > 0) parts.push(`${otherFailures} delivery failure(s): ${failureDetails.join(" | ")}`);
 
   return {
