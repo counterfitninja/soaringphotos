@@ -3,13 +3,14 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { initials } from "@/lib/utils";
+import ProfilePhotoForm from "@/components/ProfilePhotoForm";
 
 export default async function ProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
-  await requireUser();
+  const viewer = await requireUser();
   const { username } = await params;
 
   const profile = await db.user.findUnique({
@@ -30,15 +31,25 @@ export default async function ProfilePage({
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-4 rounded-2xl bg-white p-6 shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-100 text-xl font-bold text-sky-700">
-          {initials(profile.username)}
-        </div>
-        <div>
+        {profile.avatarKey ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/media/${profile.avatarKey}`}
+            alt={`${profile.username}'s profile photo`}
+            className="h-16 w-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-100 text-xl font-bold text-sky-700">
+            {initials(profile.username)}
+          </div>
+        )}
+        <div className="min-w-0">
           <h1 className="text-xl font-bold">{profile.username}</h1>
           <p className="text-sm text-neutral-500">
             {profile._count.posts} {profile._count.posts === 1 ? "post" : "posts"} · joined{" "}
             {profile.createdAt.toLocaleDateString()}
           </p>
+          {viewer.id === profile.id && <ProfilePhotoForm />}
         </div>
       </header>
 

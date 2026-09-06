@@ -21,8 +21,12 @@ export async function GET(
     return new NextResponse("Invalid key", { status: 400 });
   }
 
-  const media = await db.media.findFirst({ where: { key } });
-  if (!media) {
+  const [media, avatar] = await Promise.all([
+    db.media.findFirst({ where: { key }, select: { mimeType: true } }),
+    db.user.findFirst({ where: { avatarKey: key }, select: { avatarMimeType: true } }),
+  ]);
+  const mimeType = media?.mimeType ?? avatar?.avatarMimeType;
+  if (!mimeType) {
     return new NextResponse("Not found", { status: 404 });
   }
 
@@ -33,7 +37,7 @@ export async function GET(
 
   return new NextResponse(file.body as BodyInit, {
     headers: {
-      "Content-Type": media.mimeType,
+      "Content-Type": mimeType,
       "Cache-Control": "private, max-age=31536000, immutable",
     },
   });

@@ -14,6 +14,8 @@ model User {
   passwordHash String
   role         String   @default("member") // "admin" | "member"
   createdAt    DateTime @default(now())
+  avatarKey    String?
+  avatarMimeType String?
 
   posts          Post[]
   likes          Like[]

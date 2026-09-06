@@ -10,7 +10,7 @@ A private, invite-only Instagram-style photo & video sharing app for family memb
 - **Likes** — heart any post, with live count
 - **Comments** — comment on posts from the feed or the post detail page
 - **Forward / share** — send a post to another family member; it lands in their "Shared with me" inbox (unread badge in the navbar)
-- **Profiles** — per-user page with their post grid
+- **Profiles** — per-user page with their post grid and an optional profile photo
 - **Private media** — uploaded files are served through an authenticated route, never from a public folder
 - **PWA push notifications** — opt in on the Notifications page to receive new-post and mention alerts while the app is closed
 

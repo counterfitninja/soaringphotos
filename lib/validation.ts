@@ -25,6 +25,7 @@ export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
 export const MAX_IMAGES_PER_POST = 10;
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB per image
+export const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
 export const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
 export const MAX_VIDEO_SECONDS = 60; // enforced client-side when picking the file
 
