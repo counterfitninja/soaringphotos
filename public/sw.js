@@ -15,9 +15,17 @@ function rememberPush(data) {
     url: data.url ?? "/notifications",
   };
   self.__lastPushDebug = entry;
-  return clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-    windowClients.forEach((client) => client.postMessage({ type: "soaring-push-received", entry }));
-  });
+  return Promise.allSettled([
+    fetch("/api/push/receipt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(entry),
+    }),
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      windowClients.forEach((client) => client.postMessage({ type: "soaring-push-received", entry }));
+    }),
+  ]);
 }
 
 self.addEventListener("fetch", (event) => {
