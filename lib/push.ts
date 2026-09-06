@@ -135,6 +135,8 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
 
   let sentCount = 0;
   let failedCount = 0;
+  let expiredCount = 0;
+  const failureDetails: string[] = [];
 
   await Promise.allSettled(
     subscriptions.map(async (subscription) => {
@@ -157,16 +159,26 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
         failedCount++;
         const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
         if (statusCode === 404 || statusCode === 410) {
+          expiredCount++;
           await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
+        } else if (failureDetails.length < 3) {
+          const provider = new URL(subscription.endpoint).hostname;
+          const reason = error instanceof Error ? error.message : String(error);
+          failureDetails.push(`@${subscription.user.username} via ${provider}: ${statusCode ?? "unknown status"} ${reason}`);
         }
       }
     }),
   );
 
+  const parts = [`Sent test push notification to ${sentCount} device(s).`];
+  if (expiredCount > 0) parts.push(`Removed ${expiredCount} expired subscription(s); re-enable push on those devices.`);
+  const otherFailures = failedCount - expiredCount;
+  if (otherFailures > 0) parts.push(`${otherFailures} delivery failure(s): ${failureDetails.join(" | ")}`);
+
   return {
     success: sentCount > 0,
     sentCount,
     failedCount,
-    message: `Sent test push notification to ${sentCount} device(s). ${failedCount > 0 ? `(${failedCount} failed/expired)` : ""}`,
+    message: parts.join(" "),
   };
 }

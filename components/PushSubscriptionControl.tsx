@@ -92,6 +92,16 @@ export default function PushSubscriptionControl() {
       }
 
       const registration = await navigator.serviceWorker.ready;
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        await fetch("/api/push/subscription", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: existingSubscription.endpoint }),
+        }).catch(() => {});
+        await existingSubscription.unsubscribe();
+      }
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: decodeVapidKey(data.publicKey),
@@ -104,6 +114,10 @@ export default function PushSubscriptionControl() {
       });
 
       if (!saveRes.ok) throw new Error("Could not save subscription.");
+
+      const verifyRes = await fetch("/api/push/subscription");
+      const verifyData = verifyRes.ok ? await verifyRes.json() : null;
+      if (!verifyData?.subscribed) throw new Error("Server did not confirm the saved subscription.");
 
       setIsSubscribed(true);
       setStatus("success");

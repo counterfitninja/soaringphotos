@@ -135,12 +135,20 @@ export default function AdminPushPwaTools({
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
 
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: decodeVapidKey(keyToUse),
-        });
+      if (subscription) {
+        await fetch("/api/push/subscription", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        }).catch(() => {});
+        await subscription.unsubscribe();
+        subscription = null;
       }
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: decodeVapidKey(keyToUse),
+      });
 
       const saveRes = await fetch("/api/push/subscription", {
         method: "POST",
@@ -150,6 +158,12 @@ export default function AdminPushPwaTools({
 
       if (!saveRes.ok) {
         throw new Error("Failed to save push subscription to database.");
+      }
+
+      const verifyRes = await fetch("/api/push/subscription");
+      const verifyData = verifyRes.ok ? await verifyRes.json() : null;
+      if (!verifyData?.subscribed) {
+        throw new Error("Server did not confirm the saved push subscription.");
       }
 
       setIsSubscribed(true);
