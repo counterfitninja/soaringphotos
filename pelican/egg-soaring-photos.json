@@ -1,0 +1,211 @@
+{
+  "_comment": "Import this file through the Pelican or Pterodactyl admin panel's Nests/Eggs import action.",
+  "meta": {
+    "version": "PTDL_v2"
+  },
+  "exported_at": "2026-09-05T00:00:00+00:00",
+  "name": "Famstagram v1.1.6",
+  "author": "admin@example.com",
+  "description": "Private, invite-only family photo and video sharing app built with Next.js, Prisma, and SQLite.",
+  "features": null,
+  "docker_images": {
+    "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
+  },
+  "file_denylist": [],
+  "startup": "set -e; if ! command -v git >/dev/null; then echo 'Git is unavailable in the runtime image.'; exit 1; fi; if [ ! -d .git ]; then echo 'No Git checkout found. Reinstall the server once to initialize it.'; exit 1; fi; echo 'Checking GitHub for updates...'; LOCAL_REVISION=$(git rev-parse HEAD); git fetch --depth=1 origin \"{{GIT_BRANCH}}\"; REMOTE_REVISION=$(git rev-parse FETCH_HEAD); if [ \"$LOCAL_REVISION\" != \"$REMOTE_REVISION\" ]; then echo 'New revision found. Updating and building...'; git reset --hard FETCH_HEAD; npm ci; npx prisma generate; npm run build; elif [ ! -x node_modules/.bin/next ]; then echo 'Installing missing Node.js dependencies...'; npm ci; fi; if [ ! -f .next/BUILD_ID ]; then echo 'Building Next.js production app...'; npm run build; fi; echo 'Applying database migrations...'; npx prisma migrate deploy; echo 'Ensuring initial admin account...'; npm run db:ensure-admin; npm run start -- -p {{SERVER_PORT}}",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": \"Ready in\"}",
+    "logs": "{}",
+    "stop": "^C"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -e\n\nexport HOME=/mnt/server\n\nif [ -z \"${GIT_REPO}\" ]; then\n  echo \"Installation failed: set Git Repository (GIT_REPO) before reinstalling.\"\n  exit 1\nfi\n\nif [ -z \"${GIT_BRANCH}\" ]; then\n  echo \"Installation failed: set Git Branch (GIT_BRANCH) before reinstalling.\"\n  exit 1\nfi\n\necho \"Cloning branch ${GIT_BRANCH} from ${GIT_REPO}\"\napt-get update\napt-get install -y --no-install-recommends git ca-certificates rsync\n\nrm -rf /tmp/famstagram\ngit clone --depth 1 --branch \"${GIT_BRANCH}\" \"${GIT_REPO}\" /tmp/famstagram\nrsync -a --delete --exclude=uploads --exclude=dev.db /tmp/famstagram/ /mnt/server/\ncd /mnt/server\nnpm ci\nnpx prisma generate\nnpx prisma migrate deploy\nnpm run build\n\nmkdir -p \"${UPLOAD_DIR}\"\n",
+      "container": "ghcr.io/parkervcp/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Git Repository",
+      "description": "HTTPS or SSH URL of the Famstagram Git repository.",
+      "env_variable": "GIT_REPO",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Git Branch",
+      "description": "Branch to clone during installation.",
+      "env_variable": "GIT_BRANCH",
+      "default_value": "main",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:100",
+      "field_type": "text"
+    },
+    {
+      "name": "Session Secret",
+      "description": "A unique random secret with at least 32 characters. Do not change it after users have signed in.",
+      "env_variable": "SESSION_SECRET",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string|min:32|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Database URL",
+      "description": "Keep the default to store the SQLite database at /home/container/dev.db.",
+      "env_variable": "DATABASE_URL",
+      "default_value": "file:../dev.db",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Upload Directory",
+      "description": "Persistent directory for locally stored uploads. Use S3 settings instead when STORAGE_DRIVER is s3.",
+      "env_variable": "UPLOAD_DIR",
+      "default_value": "./uploads",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Storage Driver",
+      "description": "Use local for files in UPLOAD_DIR, or s3 for an S3-compatible object store.",
+      "env_variable": "STORAGE_DRIVER",
+      "default_value": "local",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:local,s3",
+      "field_type": "text"
+    },
+    {
+      "name": "Admin Username",
+      "description": "Used only when manually running npm run db:seed for the first time.",
+      "env_variable": "ADMIN_USERNAME",
+      "default_value": "admin",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:50",
+      "field_type": "text"
+    },
+    {
+      "name": "Admin Email",
+      "description": "Used only when manually running npm run db:seed for the first time.",
+      "env_variable": "ADMIN_EMAIL",
+      "default_value": "admin@example.com",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|email|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Admin Password",
+      "description": "Required. Used to create the initial admin account if it does not exist. Choose a strong password.",
+      "env_variable": "ADMIN_PASSWORD",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string|min:12|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "S3 Endpoint",
+      "description": "Optional endpoint for MinIO or another S3-compatible storage service.",
+      "env_variable": "S3_ENDPOINT",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "S3 Region",
+      "description": "Region for S3-compatible storage when STORAGE_DRIVER is s3.",
+      "env_variable": "S3_REGION",
+      "default_value": "us-east-1",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:100",
+      "field_type": "text"
+    },
+    {
+      "name": "S3 Bucket",
+      "description": "Bucket name when STORAGE_DRIVER is s3.",
+      "env_variable": "S3_BUCKET",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "S3 Access Key",
+      "description": "Access key when STORAGE_DRIVER is s3.",
+      "env_variable": "S3_ACCESS_KEY",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "nullable|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "S3 Secret Key",
+      "description": "Secret key when STORAGE_DRIVER is s3.",
+      "env_variable": "S3_SECRET_KEY",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "nullable|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "VAPID Public Key",
+      "description": "Public key for browser push notifications. Generate it with: npx web-push generate-vapid-keys",
+      "env_variable": "VAPID_PUBLIC_KEY",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "VAPID Private Key",
+      "description": "Private key paired with the VAPID public key. Keep this secret.",
+      "env_variable": "VAPID_PRIVATE_KEY",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "VAPID Contact",
+      "description": "Contact address required by Web Push. A plain email is accepted; the app adds mailto: automatically when needed.",
+      "env_variable": "VAPID_SUBJECT",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Push Debug Logging",
+      "description": "Set to true to log masked server-side Web Push diagnostics, including VAPID fingerprint, provider status, and rejected subscription cleanup.",
+      "env_variable": "PUSH_DEBUG",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:true,false",
+      "field_type": "text"
+    }
+  ]
+}
