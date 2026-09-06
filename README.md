@@ -1,4 +1,4 @@
-# 🦅 Soaring Photos
+# 📸 Famstagram
 
 A private, invite-only Instagram-style photo & video sharing app for family members.
 
@@ -62,10 +62,10 @@ Set `STORAGE_DRIVER="s3"` and the `S3_*` variables. For a local MinIO instance:
 
 ```bash
 docker run -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"
-# create a bucket named "soaringphotos" in the MinIO console (http://localhost:9001)
+# create a bucket named "famstagram" in the MinIO console (http://localhost:9001)
 ```
 
-and use `S3_ENDPOINT="http://localhost:9000"`, `S3_BUCKET="soaringphotos"`.
+and use `S3_ENDPOINT="http://localhost:9000"`, `S3_BUCKET="famstagram"`.
 
 ## Project structure
 

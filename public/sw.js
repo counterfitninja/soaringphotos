@@ -1,4 +1,4 @@
-self.__soaringSwVersion = "2026-09-06-push-receipts-v3";
+self.__famstagramSwVersion = "2026-09-06-push-receipts-v3";
 
 function broadcastToWindows(message) {
   return clients
@@ -18,9 +18,9 @@ self.addEventListener("activate", (event) => {
 
 function rememberPush(data) {
   const entry = {
-    serviceWorkerVersion: self.__soaringSwVersion,
+    serviceWorkerVersion: self.__famstagramSwVersion,
     receivedAt: new Date().toISOString(),
-    title: data.title ?? "Soaring Photos",
+    title: data.title ?? "Famstagram",
     body: data.body ?? "You have a new notification.",
     tag: data.tag ?? null,
     url: data.url ?? "/notifications",
@@ -34,7 +34,7 @@ function rememberPush(data) {
       body: JSON.stringify(entry),
     }),
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      windowClients.forEach((client) => client.postMessage({ type: "soaring-push-received", entry }));
+      windowClients.forEach((client) => client.postMessage({ type: "famstagram-push-received", entry }));
     }),
   ]);
 }
@@ -49,7 +49,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     Promise.all([
       rememberPush(data),
-      self.registration.showNotification(data.title ?? "Soaring Photos", {
+      self.registration.showNotification(data.title ?? "Famstagram", {
         body: data.body ?? "You have a new notification.",
         icon: "/icons/icon-192.png",
         badge: "/icons/icon-192.png",
@@ -61,11 +61,11 @@ self.addEventListener("push", (event) => {
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "soaring-get-last-push") {
-    event.waitUntil(broadcastToWindows({ type: "soaring-last-push", entry: self.__lastPushDebug ?? null }));
+  if (event.data?.type === "famstagram-get-last-push") {
+    event.waitUntil(broadcastToWindows({ type: "famstagram-last-push", entry: self.__lastPushDebug ?? null }));
   }
-  if (event.data?.type === "soaring-get-sw-version") {
-    event.waitUntil(broadcastToWindows({ type: "soaring-sw-version", version: self.__soaringSwVersion }));
+  if (event.data?.type === "famstagram-get-sw-version") {
+    event.waitUntil(broadcastToWindows({ type: "famstagram-sw-version", version: self.__famstagramSwVersion }));
   }
 });
 

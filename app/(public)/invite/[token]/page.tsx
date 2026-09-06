@@ -16,13 +16,13 @@ export default async function InvitePage({
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow">
         <Image
           src="/logo.jpeg"
-          alt="Soaring Photos"
+          alt="Famstagram"
           width={220}
           height={235}
           className="mx-auto mb-4 h-auto w-44"
           priority
         />
-        <h1 className="mb-1 text-2xl font-bold">Join Soaring Photos</h1>
+        <h1 className="mb-1 text-2xl font-bold">Join Famstagram</h1>
         {valid ? (
           <>
             <p className="mb-6 text-sm text-neutral-500">Create your family account</p>

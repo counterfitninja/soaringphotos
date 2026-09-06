@@ -1,4 +1,4 @@
-# Soaring Photos — Project Instructions
+# Famstagram — Project Instructions
 
 Private, invite-only Instagram-style photo & video sharing app for family members.
 

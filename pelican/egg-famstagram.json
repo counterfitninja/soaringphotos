@@ -4,7 +4,7 @@
     "version": "PTDL_v2"
   },
   "exported_at": "2026-09-05T00:00:00+00:00",
-  "name": "Soaring Photos v1.1.6",
+  "name": "Famstagram v1.1.6",
   "author": "admin@example.com",
   "description": "Private, invite-only family photo and video sharing app built with Next.js, Prisma, and SQLite.",
   "features": null,
@@ -21,7 +21,7 @@
   },
   "scripts": {
     "installation": {
-      "script": "#!/bin/bash\nset -e\n\nexport HOME=/mnt/server\n\nif [ -z \"${GIT_REPO}\" ]; then\n  echo \"Installation failed: set Git Repository (GIT_REPO) before reinstalling.\"\n  exit 1\nfi\n\nif [ -z \"${GIT_BRANCH}\" ]; then\n  echo \"Installation failed: set Git Branch (GIT_BRANCH) before reinstalling.\"\n  exit 1\nfi\n\necho \"Cloning branch ${GIT_BRANCH} from ${GIT_REPO}\"\napt-get update\napt-get install -y --no-install-recommends git ca-certificates rsync\n\nrm -rf /tmp/soaring-photos\ngit clone --depth 1 --branch \"${GIT_BRANCH}\" \"${GIT_REPO}\" /tmp/soaring-photos\nrsync -a --delete --exclude=uploads --exclude=dev.db /tmp/soaring-photos/ /mnt/server/\ncd /mnt/server\nnpm ci\nnpx prisma generate\nnpx prisma migrate deploy\nnpm run build\n\nmkdir -p \"${UPLOAD_DIR}\"\n",
+      "script": "#!/bin/bash\nset -e\n\nexport HOME=/mnt/server\n\nif [ -z \"${GIT_REPO}\" ]; then\n  echo \"Installation failed: set Git Repository (GIT_REPO) before reinstalling.\"\n  exit 1\nfi\n\nif [ -z \"${GIT_BRANCH}\" ]; then\n  echo \"Installation failed: set Git Branch (GIT_BRANCH) before reinstalling.\"\n  exit 1\nfi\n\necho \"Cloning branch ${GIT_BRANCH} from ${GIT_REPO}\"\napt-get update\napt-get install -y --no-install-recommends git ca-certificates rsync\n\nrm -rf /tmp/famstagram\ngit clone --depth 1 --branch \"${GIT_BRANCH}\" \"${GIT_REPO}\" /tmp/famstagram\nrsync -a --delete --exclude=uploads --exclude=dev.db /tmp/famstagram/ /mnt/server/\ncd /mnt/server\nnpm ci\nnpx prisma generate\nnpx prisma migrate deploy\nnpm run build\n\nmkdir -p \"${UPLOAD_DIR}\"\n",
       "container": "ghcr.io/parkervcp/installers:debian",
       "entrypoint": "bash"
     }
@@ -29,7 +29,7 @@
   "variables": [
     {
       "name": "Git Repository",
-      "description": "HTTPS or SSH URL of the Soaring Photos Git repository.",
+      "description": "HTTPS or SSH URL of the Famstagram Git repository.",
       "env_variable": "GIT_REPO",
       "default_value": "",
       "user_viewable": true,

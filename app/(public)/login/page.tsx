@@ -7,7 +7,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow">
         <Image
           src="/logo.jpeg"
-          alt="Soaring Photos"
+          alt="Famstagram"
           width={220}
           height={235}
           className="mx-auto mb-4 h-auto w-44"

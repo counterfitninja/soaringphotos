@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Soaring Photos",
-    short_name: "Soaring Photos",
+    name: "Famstagram",
+    short_name: "Famstagram",
     description: "Private photo and video sharing for our family",
     start_url: "/",
     display: "standalone",

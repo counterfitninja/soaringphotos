@@ -124,7 +124,7 @@ export default function PushNotifications() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">
-            {isStandalone ? "Enable notifications" : "Install Soaring Photos to enable notifications"}
+            {isStandalone ? "Enable notifications" : "Install Famstagram to enable notifications"}
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
             {isIosBrowser

@@ -8,7 +8,7 @@ export interface SessionData {
 }
 
 export const sessionOptions: SessionOptions = {
-  cookieName: "soaring_session",
+  cookieName: "famstagram_session",
   // iron-session requires a secret of at least 32 characters.
   password:
     process.env.SESSION_SECRET ?? "dev-only-secret-change-me-0123456789abcdef0123456789abcdef",

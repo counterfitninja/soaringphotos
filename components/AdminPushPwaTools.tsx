@@ -119,10 +119,10 @@ export default function AdminPushPwaTools({
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
     function handleServiceWorkerMessage(event: MessageEvent) {
-      if (event.data?.type === "soaring-push-received" || event.data?.type === "soaring-last-push") {
+      if (event.data?.type === "famstagram-push-received" || event.data?.type === "famstagram-last-push") {
         setLastRemotePush(event.data.entry ?? null);
       }
-      if (event.data?.type === "soaring-sw-version") {
+      if (event.data?.type === "famstagram-sw-version") {
         setServiceWorkerVersion(event.data.version ?? null);
       }
     }
@@ -131,8 +131,8 @@ export default function AdminPushPwaTools({
       const controller = navigator.serviceWorker?.controller;
       if (!controller) return;
       setSwControlled(true);
-      controller.postMessage({ type: "soaring-get-last-push" });
-      controller.postMessage({ type: "soaring-get-sw-version" });
+      controller.postMessage({ type: "famstagram-get-last-push" });
+      controller.postMessage({ type: "famstagram-get-sw-version" });
     }
 
     navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
@@ -540,7 +540,7 @@ export default function AdminPushPwaTools({
       {showIosGuide && (
         <div className="rounded-xl border border-sky-300 bg-sky-50 p-4 text-xs text-sky-900">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">How to Install Soaring Photos on iPhone / iPad:</h3>
+            <h3 className="font-semibold text-sm">How to Install Famstagram on iPhone / iPad:</h3>
             <button onClick={() => setShowIosGuide(false)} className="text-neutral-500 hover:text-neutral-800">
               ✕
             </button>
@@ -550,7 +550,7 @@ export default function AdminPushPwaTools({
             <li>Tap the <strong>Share icon</strong> (box with arrow pointing up) in the Safari navigation bar.</li>
             <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
             <li>Tap <strong>Add</strong> in the top-right corner.</li>
-            <li>Launch Soaring Photos from your home screen to enable Push Notifications!</li>
+            <li>Launch Famstagram from your home screen to enable Push Notifications!</li>
           </ol>
         </div>
       )}
@@ -566,7 +566,7 @@ export default function AdminPushPwaTools({
           </div>
           <ul className="mt-2 list-disc space-y-1 pl-4">
             <li>Look for the <strong>Install app icon</strong> (monitor/arrow symbol) on the right side of your address bar.</li>
-            <li>Or open the browser menu (⋮ or ⋯) and select <strong>Save and Share &gt; Install Soaring Photos</strong> or <strong>Install App</strong>.</li>
+            <li>Or open the browser menu (⋮ or ⋯) and select <strong>Save and Share &gt; Install Famstagram</strong> or <strong>Install App</strong>.</li>
             <li>If you previously installed or dismissed it, click <em>Reset Banner State</em> above to trigger the installation banner again.</li>
           </ul>
         </div>

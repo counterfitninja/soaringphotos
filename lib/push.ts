@@ -16,7 +16,7 @@ const subject = configuredSubject
   ? configuredSubject.includes(":")
     ? configuredSubject
     : `mailto:${configuredSubject}`
-  : "mailto:admin@soaring.photos";
+  : "mailto:admin@famstagram.app";
 
 // A malformed public key decodes to something other than 65 bytes; validate up front instead of throwing mid-request.
 function isValidVapidPublicKey(key: string) {
@@ -214,7 +214,7 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
           JSON.stringify({
-            title: "🔔 Soaring Photos Test",
+            title: "🔔 Famstagram Test",
             body: `Test notification sent at ${new Date().toLocaleTimeString()} for @${subscription.user.username}!`,
             url: "/notifications",
             tag: `test-push-${Date.now()}`,
