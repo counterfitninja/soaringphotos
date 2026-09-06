@@ -8,6 +8,14 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+type PushDebugEntry = {
+  receivedAt: string;
+  title: string;
+  body: string;
+  tag: string | null;
+  url: string;
+};
+
 function decodeVapidKey(key: string) {
   const padding = "=".repeat((4 - (key.length % 4)) % 4);
   const base64 = (key + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -55,6 +63,7 @@ export default function AdminPushPwaTools({
   const [browserEndpointTail, setBrowserEndpointTail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [lastRemotePush, setLastRemotePush] = useState<PushDebugEntry | null>(null);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
 
@@ -104,7 +113,18 @@ export default function AdminPushPwaTools({
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    function handleServiceWorkerMessage(event: MessageEvent) {
+      if (event.data?.type === "soaring-push-received" || event.data?.type === "soaring-last-push") {
+        setLastRemotePush(event.data.entry ?? null);
+      }
+    }
+
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
+    navigator.serviceWorker?.controller?.postMessage({ type: "soaring-get-last-push" });
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+    };
   }, []);
 
   async function handleInstallPwa() {
@@ -368,6 +388,32 @@ export default function AdminPushPwaTools({
           <p className="font-medium">{testResult}</p>
         </div>
       )}
+
+      <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-700">
+        <p className="font-semibold text-neutral-900">Remote push event</p>
+        {lastRemotePush ? (
+          <dl className="mt-2 grid gap-2 sm:grid-cols-4">
+            <div>
+              <dt className="text-[11px] font-medium uppercase text-neutral-400">Received</dt>
+              <dd className="mt-1">{new Date(lastRemotePush.receivedAt).toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase text-neutral-400">Title</dt>
+              <dd className="mt-1 truncate" title={lastRemotePush.title}>{lastRemotePush.title}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase text-neutral-400">Tag</dt>
+              <dd className="mt-1 font-mono">{lastRemotePush.tag ?? "None"}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase text-neutral-400">Target</dt>
+              <dd className="mt-1 font-mono">{lastRemotePush.url}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="mt-2 text-neutral-500">No remote push event observed by this open browser session yet.</p>
+        )}
+      </div>
 
       <div className="overflow-x-auto rounded-xl border border-neutral-200">
         <table className="w-full min-w-[780px] text-left text-xs">
