@@ -17,25 +17,39 @@ export default async function NotificationsPage() {
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Notifications</h1>
-        <div className="flex items-center gap-3">
-          <Link href="/notifications/settings" className="text-sm text-sky-600 hover:underline">
-            Settings
-          </Link>
-          {unreadCount > 0 && (
-            <form action={markAllNotificationsRead}>
-              <button className="text-sm text-sky-600 hover:underline">Mark all read</button>
-            </form>
-          )}
+    <div className="mx-auto max-w-2xl space-y-4 pb-10">
+      <div className="rounded-3xl border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Family feed</p>
+            <h1 className="mt-1 text-xl font-bold text-neutral-900">Notifications</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/notifications/settings"
+              className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+            >
+              Settings
+            </Link>
+            {unreadCount > 0 && (
+              <form action={markAllNotificationsRead}>
+                <button className="rounded-full bg-sky-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-sky-700">
+                  Mark all read
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
       {notifications.length === 0 ? (
-        <div className="rounded-2xl bg-white p-10 text-center shadow-sm">
-          <p className="text-sm text-neutral-500">
-            No notifications yet. New family posts and captions that tag you will appear here.
+        <div className="rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-xl text-sky-700">
+            ✨
+          </div>
+          <p className="text-sm font-medium text-neutral-700">Nothing new yet</p>
+          <p className="mt-2 text-sm text-neutral-500">
+            New family posts and captions that tag you will appear here.
           </p>
         </div>
       ) : (
@@ -43,15 +57,20 @@ export default async function NotificationsPage() {
           {notifications.map((notification) => {
             const media = notification.post.media[0];
             const isVideo = media?.mimeType.startsWith("video/");
+            const actionLabel =
+              notification.type === "mention" ? "mentioned you" : "shared a new post";
+
             return (
               <li key={notification.id}>
                 <Link
                   href={`/post/${notification.postId}`}
-                  className={`flex gap-3 rounded-2xl bg-white p-3 shadow-sm transition hover:shadow ${
-                    notification.readAt ? "" : "ring-2 ring-sky-400"
+                  className={`group flex gap-3 rounded-3xl border bg-white p-2.5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                    notification.readAt
+                      ? "border-neutral-200"
+                      : "border-sky-200 bg-sky-50/60 ring-1 ring-sky-200"
                   }`}
                 >
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-200">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-neutral-200">
                     {media &&
                       (isVideo ? (
                         <video
@@ -69,21 +88,33 @@ export default async function NotificationsPage() {
                         />
                       ))}
                     {isVideo && (
-                      <span className="absolute right-1 top-1 rounded bg-black/60 px-1 text-[10px] text-white">
+                      <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
                         ▶
                       </span>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm">
-                      <span className="font-semibold">{notification.actor.username}</span>{" "}
-                      {notification.type === "mention" ? "mentioned you" : "added a new post"}
-                    </p>
-                    <p className="mt-1 text-xs text-neutral-400">
-                      {timeAgo(notification.createdAt)}
+
+                  <div className="min-w-0 flex-1 pt-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm leading-5 text-neutral-800">
+                        <span className="font-semibold text-neutral-900">{notification.actor.username}</span>{" "}
+                        <span>{actionLabel}</span>
+                      </p>
                       {!notification.readAt && (
-                        <span className="ml-2 font-medium text-sky-600">New</span>
+                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                          New
+                        </span>
                       )}
+                    </div>
+
+                    {notification.post.caption && (
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">
+                        {notification.post.caption}
+                      </p>
+                    )}
+
+                    <p className="mt-2 text-[11px] font-medium text-neutral-400">
+                      {timeAgo(notification.createdAt)}
                     </p>
                   </div>
                 </Link>
