@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const receiptSchema = z.object({
+  serviceWorkerVersion: z.string().max(80).optional(),
   receivedAt: z.string().max(64),
   title: z.string().max(120),
   body: z.string().max(240),

@@ -9,6 +9,7 @@ interface InstallPromptEvent extends Event {
 }
 
 type PushDebugEntry = {
+  serviceWorkerVersion?: string;
   receivedAt: string;
   title: string;
   body: string;
@@ -64,6 +65,7 @@ export default function AdminPushPwaTools({
   const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [lastRemotePush, setLastRemotePush] = useState<PushDebugEntry | null>(null);
+  const [serviceWorkerVersion, setServiceWorkerVersion] = useState<string | null>(null);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
 
@@ -117,10 +119,14 @@ export default function AdminPushPwaTools({
       if (event.data?.type === "soaring-push-received" || event.data?.type === "soaring-last-push") {
         setLastRemotePush(event.data.entry ?? null);
       }
+      if (event.data?.type === "soaring-sw-version") {
+        setServiceWorkerVersion(event.data.version ?? null);
+      }
     }
 
     navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
     navigator.serviceWorker?.controller?.postMessage({ type: "soaring-get-last-push" });
+    navigator.serviceWorker?.controller?.postMessage({ type: "soaring-get-sw-version" });
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
@@ -259,6 +265,31 @@ export default function AdminPushPwaTools({
     }
   }
 
+  async function handlePingPushReceipt() {
+    setLoading(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/push/receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceWorkerVersion: serviceWorkerVersion ?? "page-ping",
+          receivedAt: new Date().toISOString(),
+          title: "Manual receipt ping",
+          body: "Admin diagnostics verified the receipt endpoint.",
+          tag: "manual-receipt-ping",
+          url: "/admin",
+        }),
+      });
+      if (!res.ok) throw new Error(`Receipt endpoint returned ${res.status}.`);
+      setTestResult("Receipt endpoint ping logged on the server.");
+    } catch (err) {
+      setTestResult(`Receipt endpoint ping failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleResetInstallBanner() {
     localStorage.removeItem("pwa_prompt_dismissed");
     window.dispatchEvent(new Event("reset-pwa-banner"));
@@ -321,6 +352,9 @@ export default function AdminPushPwaTools({
         <p className="mt-2 text-neutral-500">
           Matching fingerprints mean this browser subscription was created with the server's current VAPID public key.
         </p>
+        <p className="mt-2 text-neutral-500">
+          Active service worker: <span className="font-mono text-neutral-700">{serviceWorkerVersion ?? "Unknown or old worker"}</span>
+        </p>
       </div>
 
       {!isVapidConfigured && (
@@ -376,6 +410,15 @@ export default function AdminPushPwaTools({
 
         <button
           type="button"
+          onClick={handlePingPushReceipt}
+          disabled={loading}
+          className="rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+        >
+          Ping Push Receipt Log
+        </button>
+
+        <button
+          type="button"
           onClick={handleResetInstallBanner}
           className="rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-500 hover:bg-neutral-50"
         >
@@ -408,6 +451,10 @@ export default function AdminPushPwaTools({
             <div>
               <dt className="text-[11px] font-medium uppercase text-neutral-400">Target</dt>
               <dd className="mt-1 font-mono">{lastRemotePush.url}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase text-neutral-400">Worker</dt>
+              <dd className="mt-1 font-mono">{lastRemotePush.serviceWorkerVersion ?? "Unknown"}</dd>
             </div>
           </dl>
         ) : (
