@@ -66,6 +66,7 @@ export default function AdminPushPwaTools({
   const [testResult, setTestResult] = useState<string | null>(null);
   const [lastRemotePush, setLastRemotePush] = useState<PushDebugEntry | null>(null);
   const [serviceWorkerVersion, setServiceWorkerVersion] = useState<string | null>(null);
+  const [swControlled, setSwControlled] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
 
@@ -124,12 +125,23 @@ export default function AdminPushPwaTools({
       }
     }
 
+    function pingWorker() {
+      const controller = navigator.serviceWorker?.controller;
+      if (!controller) return;
+      setSwControlled(true);
+      controller.postMessage({ type: "soaring-get-last-push" });
+      controller.postMessage({ type: "soaring-get-sw-version" });
+    }
+
     navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
-    navigator.serviceWorker?.controller?.postMessage({ type: "soaring-get-last-push" });
-    navigator.serviceWorker?.controller?.postMessage({ type: "soaring-get-sw-version" });
+    // The worker may take control after this component mounts (fresh registration); ping again when that happens.
+    navigator.serviceWorker?.addEventListener("controllerchange", pingWorker);
+    pingWorker();
+    navigator.serviceWorker?.ready.then(pingWorker).catch(() => {});
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+      navigator.serviceWorker?.removeEventListener("controllerchange", pingWorker);
     };
   }, []);
 
@@ -353,7 +365,13 @@ export default function AdminPushPwaTools({
           Matching fingerprints mean this browser subscription was created with the server's current VAPID public key.
         </p>
         <p className="mt-2 text-neutral-500">
-          Active service worker: <span className="font-mono text-neutral-700">{serviceWorkerVersion ?? "Unknown or old worker"}</span>
+          Active service worker:{" "}
+          <span className="font-mono text-neutral-700">
+            {serviceWorkerVersion ??
+              (swControlled
+                ? "Old worker without version reporting — unregister and reload"
+                : "Not controlling this tab yet — reload once")}
+          </span>
         </p>
       </div>
 
