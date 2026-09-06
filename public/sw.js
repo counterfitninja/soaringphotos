@@ -1,4 +1,4 @@
-self.__soaringSwVersion = "2026-09-06-push-receipts-v2";
+self.__soaringSwVersion = "2026-09-06-push-receipts-v3";
 
 function broadcastToWindows(message) {
   return clients
@@ -38,11 +38,6 @@ function rememberPush(data) {
     }),
   ]);
 }
-
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(fetch(event.request));
-});
 
 self.addEventListener("push", (event) => {
   let data = {};
