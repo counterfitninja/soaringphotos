@@ -1,10 +1,15 @@
-// Minimal fetch handler: required for PWA installability (offline capability check).
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
   event.respondWith(fetch(event.request));
 });
 
 self.addEventListener("push", (event) => {
-  const data = event.data?.json() ?? {};
+  let data = {};
+  try {
+    data = event.data?.json() ?? {};
+  } catch {
+    data = { body: event.data?.text() };
+  }
   event.waitUntil(
     self.registration.showNotification(data.title ?? "Soaring Photos", {
       body: data.body ?? "You have a new notification.",
