@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 /** Shared Prisma include for rendering a post card (feed + post detail). */
 export const postInclude = {
-  author: { select: { id: true, username: true } },
+  author: { select: { id: true, username: true, avatarKey: true } },
   media: { orderBy: { order: "asc" as const } },
   likes: { select: { userId: true } },
   comments: {

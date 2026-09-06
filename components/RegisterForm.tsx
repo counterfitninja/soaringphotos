@@ -32,6 +32,21 @@ export default function RegisterForm({ token }: { token: string }) {
         </p>
       </div>
 
+      <div>
+        <label className="block cursor-pointer rounded-lg border border-dashed border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 hover:border-sky-300">
+          <span className="font-medium">Add a profile photo</span>
+          <span className="mt-1 block text-xs text-sky-700/70">
+            Optional. JPG, PNG, WebP or GIF, up to 5 MB.
+          </span>
+          <input
+            name="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="mt-2 block w-full text-xs text-neutral-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-sky-700"
+          />
+        </label>
+      </div>
+
       <input
         name="email"
         type="email"

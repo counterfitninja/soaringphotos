@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { registerSchema } from "@/lib/validation";
+import { deleteMedia, saveMedia } from "@/lib/storage";
+import { IMAGE_TYPES, MAX_AVATAR_SIZE, registerSchema } from "@/lib/validation";
 
 export type AuthState = { error?: string } | null;
 
@@ -65,17 +66,38 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
     return { error: "That username or email is already taken." };
   }
 
-  const user = await db.user.create({
-    data: {
-      username,
-      email: email.toLowerCase(),
-      passwordHash: await bcrypt.hash(password, 10),
-    },
-  });
-  await db.invite.update({
-    where: { id: invite.id },
-    data: { usedAt: new Date(), usedById: user.id },
-  });
+  const photo = formData.get("photo");
+  let avatar: { key: string; mimeType: string } | null = null;
+  if (photo instanceof File && photo.size > 0) {
+    if (!IMAGE_TYPES.includes(photo.type)) {
+      return { error: "Profile photos must be JPG, PNG, WebP or GIF images." };
+    }
+    if (photo.size > MAX_AVATAR_SIZE) {
+      return { error: "Profile photos must be smaller than 5 MB." };
+    }
+    avatar = await saveMedia(photo);
+  }
+
+  let user;
+  try {
+    user = await db.user.create({
+      data: {
+        username,
+        email: email.toLowerCase(),
+        passwordHash: await bcrypt.hash(password, 10),
+        avatarKey: avatar?.key,
+        avatarMimeType: avatar?.mimeType,
+      },
+    });
+    await db.invite.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date(), usedById: user.id },
+    });
+
+  } catch (error) {
+    if (avatar) await deleteMedia(avatar.key);
+    throw error;
+  }
 
   const session = await getSession();
   session.userId = user.id;

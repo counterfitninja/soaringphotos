@@ -26,9 +26,18 @@ export default function PostCard({
       <header className="flex items-center gap-3 p-4">
         <Link
           href={`/profile/${post.author.username}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700"
+          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-bold text-sky-700"
         >
-          {initials(post.author.username)}
+          {post.author.avatarKey ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/media/${post.author.avatarKey}`}
+              alt={`${post.author.username}'s profile photo`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initials(post.author.username)
+          )}
         </Link>
         <div>
           <Link
