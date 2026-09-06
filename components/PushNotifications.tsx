@@ -124,14 +124,14 @@ export default function PushNotifications() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">
-            {isStandalone ? "Enable notifications" : "Install Soaring Photos"}
+            {isStandalone ? "Enable notifications" : "Install Soaring Photos to enable notifications"}
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
             {isIosBrowser
-              ? "Use Safari Share button, then tap 'Add to Home Screen'."
+              ? "Use Safari Share button, then tap 'Add to Home Screen' to enable notifications."
               : isStandalone
                 ? "Turn on notifications to receive new family post and tag alerts."
-                : "Install once to receive new family post and tag alerts."}
+                : "Install the app to enable notifications for new family posts and tag alerts."}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -142,7 +142,7 @@ export default function PushNotifications() {
               disabled={status === "saving"}
               className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
             >
-              {isStandalone ? "Enable" : "Install app"}
+              {isStandalone ? "Enable notifications" : "Install app & enable notifications"}
             </button>
           )}
           <button
