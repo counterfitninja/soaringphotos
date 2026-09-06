@@ -37,6 +37,20 @@ function shouldDeleteRejectedSubscription(statusCode: number | undefined) {
   return statusCode === 401 || statusCode === 403 || statusCode === 404 || statusCode === 410;
 }
 
+function isPushDebugEnabled() {
+  return cleanEnv(process.env.PUSH_DEBUG)?.toLowerCase() === "true";
+}
+
+function pushDebug(message: string, details?: Record<string, unknown>) {
+  if (!isPushDebugEnabled()) return;
+  console.log(`[push] ${message}`, details ?? "");
+}
+
+function endpointSummary(endpoint: string) {
+  const url = new URL(endpoint);
+  return { provider: url.hostname, endpointTail: endpoint.slice(-18) };
+}
+
 export function isPushConfigured() {
   return vapidConfigured;
 }
@@ -61,7 +75,15 @@ export async function sendPushNotifications({
   caption: string;
   postId: string;
 }) {
-  if (!isPushConfigured() || recipients.length === 0 || !publicKey || !privateKey) return;
+  if (!isPushConfigured() || recipients.length === 0 || !publicKey || !privateKey) {
+    pushDebug("skipped send", {
+      configured: isPushConfigured(),
+      recipientCount: recipients.length,
+      hasPublicKey: Boolean(publicKey),
+      hasPrivateKey: Boolean(privateKey),
+    });
+    return;
+  }
 
   try {
     webpush.setVapidDetails(subject, publicKey, privateKey);
@@ -73,6 +95,12 @@ export async function sendPushNotifications({
     where: { userId: { in: recipients.map((recipient) => recipient.id) } },
   });
   const notificationTypeByUserId = new Map(recipients.map((recipient) => [recipient.id, recipient.type]));
+  pushDebug("sending notifications", {
+    recipientCount: recipients.length,
+    subscriptionCount: subscriptions.length,
+    vapidSubject: subject,
+    publicKeyFingerprint: getPushPublicKeyFingerprint(),
+  });
 
   await Promise.allSettled(
     subscriptions.map(async (subscription) => {
@@ -89,12 +117,28 @@ export async function sendPushNotifications({
           },
           JSON.stringify({ title, body, url: `/post/${postId}`, tag: `post-${postId}` }),
         );
+        pushDebug("sent notification", {
+          userId: subscription.userId,
+          type,
+          ...endpointSummary(subscription.endpoint),
+        });
       } catch (error) {
         const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
         if (shouldDeleteRejectedSubscription(statusCode)) {
           await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
+          pushDebug("removed rejected subscription", {
+            userId: subscription.userId,
+            statusCode,
+            ...endpointSummary(subscription.endpoint),
+          });
         } else {
           console.error("Failed to send push notification", error);
+          pushDebug("failed notification", {
+            userId: subscription.userId,
+            statusCode,
+            message: error instanceof Error ? error.message : String(error),
+            ...endpointSummary(subscription.endpoint),
+          });
         }
       }
     }),
@@ -108,6 +152,11 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
   message: string;
 }> {
   if (!isPushConfigured() || !publicKey || !privateKey) {
+    pushDebug("skipped test send", {
+      configured: isPushConfigured(),
+      hasPublicKey: Boolean(publicKey),
+      hasPrivateKey: Boolean(privateKey),
+    });
     return {
       success: false,
       sentCount: 0,
@@ -130,6 +179,12 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
   const subscriptions = await db.pushSubscription.findMany({
     where: targetUserId ? { userId: targetUserId } : undefined,
     include: { user: { select: { username: true } } },
+  });
+  pushDebug("sending test notifications", {
+    targetUserId: targetUserId ?? null,
+    subscriptionCount: subscriptions.length,
+    vapidSubject: subject,
+    publicKeyFingerprint: getPushPublicKeyFingerprint(),
   });
 
   if (subscriptions.length === 0) {
@@ -165,16 +220,31 @@ export async function sendTestPushNotification(targetUserId?: string): Promise<{
           }),
         );
         sentCount++;
+        pushDebug("sent test notification", {
+          user: subscription.user.username,
+          ...endpointSummary(subscription.endpoint),
+        });
       } catch (error) {
         failedCount++;
         const statusCode = error instanceof webpush.WebPushError ? error.statusCode : undefined;
         if (shouldDeleteRejectedSubscription(statusCode)) {
           invalidSubscriptionCount++;
           await db.pushSubscription.delete({ where: { endpoint: subscription.endpoint } }).catch(() => {});
+          pushDebug("removed rejected test subscription", {
+            user: subscription.user.username,
+            statusCode,
+            ...endpointSummary(subscription.endpoint),
+          });
         } else if (failureDetails.length < 3) {
           const provider = new URL(subscription.endpoint).hostname;
           const reason = error instanceof Error ? error.message : String(error);
           failureDetails.push(`@${subscription.user.username} via ${provider}: ${statusCode ?? "unknown status"} ${reason}`);
+          pushDebug("failed test notification", {
+            user: subscription.user.username,
+            statusCode,
+            message: reason,
+            ...endpointSummary(subscription.endpoint),
+          });
         }
       }
     }),

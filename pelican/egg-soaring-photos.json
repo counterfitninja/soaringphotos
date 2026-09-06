@@ -189,12 +189,22 @@
     },
     {
       "name": "VAPID Contact",
-      "description": "A mailto: contact address required by Web Push, for example mailto:admin@example.com.",
+      "description": "Contact address required by Web Push. A plain email is accepted; the app adds mailto: automatically when needed.",
       "env_variable": "VAPID_SUBJECT",
       "default_value": "",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "Push Debug Logging",
+      "description": "Set to true to log masked server-side Web Push diagnostics, including VAPID fingerprint, provider status, and rejected subscription cleanup.",
+      "env_variable": "PUSH_DEBUG",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:true,false",
       "field_type": "text"
     }
   ]
