@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { initials } from "@/lib/utils";
+import PasskeySetupButton from "@/components/PasskeySetupButton";
 import ProfilePhotoForm from "@/components/ProfilePhotoForm";
 
 export default async function ProfilePage({
@@ -49,7 +50,12 @@ export default async function ProfilePage({
             {profile._count.posts} {profile._count.posts === 1 ? "post" : "posts"} · joined{" "}
             {profile.createdAt.toLocaleDateString()}
           </p>
-          {viewer.id === profile.id && <ProfilePhotoForm />}
+          {viewer.id === profile.id && (
+            <div className="mt-3 space-y-3">
+              <ProfilePhotoForm />
+              <PasskeySetupButton />
+            </div>
+          )}
         </div>
       </header>
 

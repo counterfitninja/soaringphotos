@@ -12,6 +12,7 @@ A private, invite-only Instagram-style photo & video sharing app for family memb
 - **Forward / share** — send a post to another family member; it lands in their "Shared with me" inbox (unread badge in the navbar)
 - **Profiles** — per-user page with their post grid and an optional profile photo
 - **Private media** — uploaded files are served through an authenticated route, never from a public folder
+- **Passkey login** — use Face ID / Touch ID / Windows Hello to sign in without a password
 - **PWA push notifications** — opt in on the Notifications page to receive new-post and mention alerts while the app is closed
 
 ## Tech stack
@@ -41,6 +42,7 @@ Copy `.env.example` to `.env` and adjust:
 | --- | --- |
 | `DATABASE_URL` | SQLite location (default `file:./dev.db`) |
 | `SESSION_SECRET` | Cookie encryption secret — **required ≥ 32 chars** |
+| `WEBAUTHN_ORIGIN` / `WEBAUTHN_RP_ID` / `WEBAUTHN_RP_NAME` | Passkey origin and relying party settings for Face ID / Touch ID / Windows Hello |
 | `STORAGE_DRIVER` | `local` (default) or `s3` |
 | `UPLOAD_DIR` | Folder for uploaded media when using `local` (default `./uploads`) |
 | `S3_ENDPOINT` / `S3_REGION` / `S3_BUCKET` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | S3-compatible storage (e.g. MinIO) when using `s3` |

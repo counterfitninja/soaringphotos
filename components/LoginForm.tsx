@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { login } from "@/app/actions/auth";
+import PasskeyLoginButton from "@/components/PasskeyLoginButton";
 import { btnPrimary, inputCls } from "@/lib/ui";
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, null);
+  const [identifier, setIdentifier] = useState("");
 
   return (
     <form action={formAction} className="space-y-4">
@@ -18,6 +20,8 @@ export default function LoginForm() {
         autoComplete="username"
         placeholder="Username or email"
         className={inputCls}
+        value={identifier}
+        onChange={(event) => setIdentifier(event.target.value)}
       />
       <input
         name="password"
@@ -28,8 +32,19 @@ export default function LoginForm() {
         className={inputCls}
       />
       <button type="submit" disabled={isPending} className={btnPrimary}>
-        {isPending ? "Signing in…" : "Sign in"}
+        {isPending ? "Signing in…" : "Sign in with password"}
       </button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-neutral-200" />
+        </div>
+        <div className="relative flex justify-center text-[11px] uppercase tracking-[0.2em] text-neutral-400">
+          <span className="bg-white px-2">or</span>
+        </div>
+      </div>
+
+      <PasskeyLoginButton identifier={identifier} />
     </form>
   );
 }

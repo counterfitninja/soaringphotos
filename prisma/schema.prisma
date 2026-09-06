@@ -8,27 +8,41 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String
-  role         String   @default("member") // "admin" | "member"
-  createdAt    DateTime @default(now())
-  avatarKey    String?
-  avatarMimeType String?
+  id               String   @id @default(cuid())
+  username         String   @unique
+  email            String   @unique
+  passwordHash     String
+  role             String   @default("member") // "admin" | "member"
+  createdAt        DateTime @default(now())
+  avatarKey        String?
+  avatarMimeType   String?
 
-  posts          Post[]
-  likes          Like[]
-  comments       Comment[]
-  invitesCreated Invite[]     @relation("InviteCreatedBy")
-  inviteUsed     Invite?      @relation("InviteUsedBy")
-  sharesSent     SharedPost[] @relation("ShareFrom")
-  sharesReceived SharedPost[] @relation("ShareTo")
-  notifications  Notification[] @relation("NotificationUser")
+  posts            Post[]
+  likes            Like[]
+  comments         Comment[]
+  invitesCreated   Invite[]     @relation("InviteCreatedBy")
+  inviteUsed       Invite?      @relation("InviteUsedBy")
+  sharesSent       SharedPost[] @relation("ShareFrom")
+  sharesReceived   SharedPost[] @relation("ShareTo")
+  notifications    Notification[] @relation("NotificationUser")
   notificationsSent Notification[] @relation("NotificationActor")
   pushSubscriptions PushSubscription[]
   notificationMutes NotificationMute[] @relation("MuteOwner")
-  mutedByOthers     NotificationMute[] @relation("MutedByOthers")
+  mutedByOthers    NotificationMute[] @relation("MutedByOthers")
+  passkeys         WebAuthnCredential[]
+}
+
+model WebAuthnCredential {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String  @unique
+  publicKey   String
+  counter     Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Invite {
