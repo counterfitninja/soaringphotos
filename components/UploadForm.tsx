@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { btnPrimary, inputCls } from "@/lib/ui";
 import {
   MAX_IMAGES_PER_POST,
@@ -13,9 +13,15 @@ import {
 
 export default function UploadForm() {
   const router = useRouter();
+  const captionRef = useRef<HTMLTextAreaElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const [mentionCaret, setMentionCaret] = useState<number | null>(null);
+  const [mentionSuggestions, setMentionSuggestions] = useState<string[]>([]);
+  const [activeMentionIndex, setActiveMentionIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -25,6 +31,71 @@ export default function UploadForm() {
     setPreviews(urls);
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
+
+  // Fetch @mention suggestions with a short debounce while typing.
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/users/suggest?q=${encodeURIComponent(mentionQuery)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setMentionSuggestions([]);
+          return;
+        }
+        const data = (await res.json()) as { users?: string[] };
+        setMentionSuggestions(Array.isArray(data.users) ? data.users : []);
+        setActiveMentionIndex(0);
+      } catch {
+        setMentionSuggestions([]);
+      }
+    }, 180);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [mentionQuery]);
+
+  function syncMentionState(value: string, caret: number) {
+    const beforeCaret = value.slice(0, caret);
+    const match = beforeCaret.match(/(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]*)$/);
+    if (!match) {
+      setMentionQuery(null);
+      setMentionStart(null);
+      setMentionCaret(null);
+      return;
+    }
+
+    setMentionQuery(match[2]);
+    setMentionStart(caret - match[2].length - 1);
+    setMentionCaret(caret);
+  }
+
+  function applyMention(username: string, textarea: HTMLTextAreaElement) {
+    if (mentionStart === null || mentionCaret === null) return;
+
+    const nextCaption =
+      caption.slice(0, mentionStart) + `@${username} ` + caption.slice(mentionCaret);
+    const nextCaret = mentionStart + username.length + 2;
+
+    setCaption(nextCaption);
+    setMentionQuery(null);
+    setMentionSuggestions([]);
+    setMentionStart(null);
+    setMentionCaret(null);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
 
   function checkVideoDuration(file: File): Promise<boolean> {
     return new Promise((resolve) => {
@@ -179,14 +250,82 @@ export default function UploadForm() {
       )}
 
       <div>
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          maxLength={500}
-          rows={3}
-          placeholder="Write a short description about your photo…"
-          className={inputCls}
-        />
+        <div className="relative">
+          <textarea
+            ref={captionRef}
+            value={caption}
+            onChange={(e) => {
+              setCaption(e.target.value);
+              syncMentionState(e.target.value, e.target.selectionStart);
+            }}
+            onClick={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
+            onKeyUp={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
+            onBlur={() => {
+              // Delay close so suggestion clicks can still register.
+              window.setTimeout(() => {
+                setMentionQuery(null);
+                setMentionSuggestions([]);
+                setMentionStart(null);
+                setMentionCaret(null);
+              }, 120);
+            }}
+            onKeyDown={(e) => {
+              if (mentionSuggestions.length === 0 || mentionStart === null || mentionCaret === null) return;
+
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setActiveMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActiveMentionIndex(
+                  (prev) => (prev - 1 + mentionSuggestions.length) % mentionSuggestions.length,
+                );
+                return;
+              }
+              if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                applyMention(mentionSuggestions[activeMentionIndex], e.currentTarget);
+                return;
+              }
+              if (e.key === "Escape") {
+                setMentionQuery(null);
+                setMentionSuggestions([]);
+                setMentionStart(null);
+                setMentionCaret(null);
+              }
+            }}
+            maxLength={500}
+            rows={3}
+            placeholder="Write a short description about your photo…"
+            className={inputCls}
+          />
+
+          {mentionQuery !== null && mentionSuggestions.length > 0 && (
+            <ul className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
+              {mentionSuggestions.map((username, index) => (
+                <li key={username}>
+                  <button
+                    type="button"
+                    className={`w-full px-3 py-2 text-left text-sm ${
+                      index === activeMentionIndex ? "bg-sky-50 text-sky-700" : "text-neutral-700"
+                    } hover:bg-sky-50 hover:text-sky-700`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (captionRef.current) {
+                        applyMention(username, captionRef.current);
+                      }
+                    }}
+                  >
+                    @{username}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-neutral-500">Type @ to mention a family member.</p>
         <p className="mt-1 text-right text-xs text-neutral-400">{caption.length}/500</p>
       </div>
 
