@@ -5,6 +5,7 @@ const PUBLIC_PREFIXES = ["/login", "/invite", "/icons"];
 const PUBLIC_ASSETS = [
   "/manifest.webmanifest",
   "/sw.js",
+  "/api/push/receipt",
   "/icon.jpeg",
   "/apple-icon.jpeg",
   "/logo.jpeg",
