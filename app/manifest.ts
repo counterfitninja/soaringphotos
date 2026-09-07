@@ -14,5 +14,16 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Lets other apps (e.g. Google Photos) "Share" images/video directly into Famstagram.
+    share_target: {
+      action: "/api/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        title: "title",
+        text: "text",
+        files: [{ name: "media", accept: ["image/*", "video/*"] }],
+      },
+    },
   };
 }

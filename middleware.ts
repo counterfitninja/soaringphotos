@@ -6,6 +6,10 @@ const PUBLIC_ASSETS = [
   "/manifest.webmanifest",
   "/sw.js",
   "/api/push/receipt",
+  // Auth is checked inside the route itself so an unauthenticated POST (from
+  // the OS share sheet) gets a proper redirect instead of a 307-preserved
+  // POST to the /login page.
+  "/api/share-target",
   "/icon.jpeg",
   "/apple-icon.jpeg",
   "/logo.jpeg",
