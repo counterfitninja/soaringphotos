@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toRequestUrl } from "@/lib/request-url";
 import { sessionOptions } from "@/lib/session";
 
 const PUBLIC_PREFIXES = ["/login", "/invite", "/icons"];
@@ -26,10 +27,10 @@ export function middleware(req: NextRequest) {
   const hasSessionCookie = req.cookies.has(sessionOptions.cookieName);
 
   if (!hasSessionCookie && !isPublic && !isPublicAsset) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(toRequestUrl(req, "/login"));
   }
   if (hasSessionCookie && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(toRequestUrl(req, "/"));
   }
   return NextResponse.next();
 }

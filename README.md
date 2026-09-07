@@ -42,6 +42,7 @@ Copy `.env.example` to `.env` and adjust:
 | --- | --- |
 | `DATABASE_URL` | SQLite location (default `file:./dev.db`) |
 | `SESSION_SECRET` | Cookie encryption secret — **required ≥ 32 chars** |
+| `APP_ORIGIN` | Canonical app origin for server-side redirects (recommended when running behind a reverse proxy) |
 | `WEBAUTHN_ORIGIN` / `WEBAUTHN_RP_ID` / `WEBAUTHN_RP_NAME` | Passkey origin and relying party settings for Face ID / Touch ID / Windows Hello |
 | `STORAGE_DRIVER` | `local` (default) or `s3` |
 | `UPLOAD_DIR` | Folder for uploaded media when using `local` (default `./uploads`) |
