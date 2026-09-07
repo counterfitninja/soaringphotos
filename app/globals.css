@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+	*,
+	::before,
+	::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		min-width: 320px;
+		overflow-x: clip;
+	}
+
+	body {
+		min-width: 320px;
+	}
+}

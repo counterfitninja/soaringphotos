@@ -23,7 +23,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         unreadShares={unreadShares}
         unreadNotifications={unreadNotifications}
       />
-      <main className="mx-auto max-w-xl px-4 py-6 pb-20 lg:max-w-6xl sm:pb-6">{children}</main>
+      <main className="mx-auto max-w-xl px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:max-w-6xl sm:pb-6">
+        {children}
+      </main>
       <PushNotifications />
       <MobileTabBar />
     </div>

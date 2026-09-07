@@ -15,12 +15,12 @@ export default function Navbar({
 }) {
   return (
     <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
-      <nav className="mx-auto flex max-w-xl items-center justify-between px-4 py-3 lg:max-w-6xl">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-sky-700">
+      <nav className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 lg:max-w-6xl">
+        <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-sky-700">
           <Image src="/logo.jpeg" alt="Famstagram" width={40} height={43} className="rounded-md" />
           <span>Famstagram</span>
         </Link>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
           <Link
             href="/create"
             className="hidden font-medium text-neutral-700 hover:text-sky-700 sm:inline"
@@ -50,7 +50,7 @@ export default function Navbar({
           )}
           <Link
             href={`/profile/${username}`}
-            className="font-medium text-neutral-700 hover:text-sky-700"
+            className="max-w-24 truncate font-medium text-neutral-700 hover:text-sky-700"
           >
             {username}
           </Link>

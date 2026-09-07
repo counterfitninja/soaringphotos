@@ -1,8 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: scaffold -> 1.0.0
-- Modified principles: none; all five principles established from the scaffold
-- Added sections: Security and Privacy Constraints; Development Workflow and Quality Gates
+- Version change: 1.0.0 -> 1.1.0
+- Modified principles: none
+- Added principles: VI. Responsive PWA and Layout Integrity
+- Added sections: none
 - Removed sections: none
 - Follow-up TODOs: confirm the original ratification date
 -->
@@ -49,6 +50,15 @@ operationally important failures MUST remain diagnosable through structured erro
 without exposing private data. Backward-incompatible changes MUST include a migration or
 rollout path and update the relevant documentation.
 
+### VI. Responsive PWA and Layout Integrity
+User-facing workflows MUST work on supported desktop and mobile viewport sizes through the
+installable progressive web app experience. Layouts MUST remain usable across touch and
+pointer input, respect device safe areas, and keep controls and content within their intended
+containers. Before release, changed UI MUST be checked at representative desktop and mobile
+sizes for clipping, unintended scrolling, text overflow, and overlapping controls or content.
+This protects the family workflow from device-specific layout failures and keeps the PWA
+experience reliable in both browser and installed contexts.
+
 ## Security and Privacy Constraints
 
 The application MUST keep uploads outside `public/` and MUST serve media through the
@@ -82,4 +92,4 @@ compliance check against the principles and quality gates. The project owner MUS
 constitution at each major release and whenever authentication, privacy, storage, or
 deployment architecture changes.
 
-**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): original adoption date unknown | **Last Amended**: 2026-09-07
+**Version**: 1.1.0 | **Ratified**: TODO(RATIFICATION_DATE): original adoption date unknown | **Last Amended**: 2026-09-07

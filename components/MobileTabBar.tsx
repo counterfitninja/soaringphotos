@@ -13,7 +13,7 @@ export default function MobileTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:hidden">
       <div className="mx-auto flex max-w-xl items-center justify-around">
         {tabs.map((tab) => {
           const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
