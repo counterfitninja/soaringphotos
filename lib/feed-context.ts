@@ -75,10 +75,15 @@ export async function getFeedContext(): Promise<FeedContext | null> {
   if (!validActive) {
     activeFeedId = infos[0]?.feedId ?? null;
     if (viewMode === "all" && infos.length < 2) viewMode = "feed";
-    // Repair the session so subsequent requests are consistent.
     session.activeFeedId = activeFeedId ?? undefined;
     session.feedViewMode = viewMode;
-    await session.save();
+    try {
+      // Persist the repair when possible; during RSC render cookies are read-only,
+      // in which case the values are simply recomputed on the next request.
+      await session.save();
+    } catch {
+      // ignore: read-only cookie context
+    }
   }
 
   return { user, memberships: infos, activeFeedId, viewMode };
