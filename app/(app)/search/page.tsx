@@ -1,13 +1,15 @@
-import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { membershipFeedIds, requireFeedContext } from "@/lib/feed-context";
 import SearchUsers from "@/components/SearchUsers";
 
 export default async function SearchPage() {
-  const user = await requireUser();
+  const ctx = await requireFeedContext();
+  const feedIds = membershipFeedIds(ctx);
 
+  // Only users sharing at least one feed with the searcher are discoverable (FR-010).
   const users = await db.user.findMany({
-    where: { id: { not: user.id } },
-    select: { username: true, _count: { select: { posts: true } } },
+    where: { id: { not: ctx.user.id }, feedMemberships: { some: { feedId: { in: feedIds } } } },
+    select: { username: true, _count: { select: { posts: { where: { feedId: { in: feedIds } } } } } },
     orderBy: { username: "asc" },
   });
 

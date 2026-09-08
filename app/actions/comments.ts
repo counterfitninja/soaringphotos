@@ -19,8 +19,13 @@ export async function addComment(
     return { error: "Comments must be 1-500 characters." };
   }
 
-  const post = await db.post.findUnique({ where: { id: postId }, select: { id: true } });
+  const post = await db.post.findUnique({ where: { id: postId }, select: { id: true, feedId: true } });
   if (!post) return { error: "Post not found." };
+  const membership = await db.feedMembership.findUnique({
+    where: { userId_feedId: { userId: user.id, feedId: post.feedId } },
+    select: { id: true },
+  });
+  if (!membership) return { error: "Post not found." }; // FR-010
 
   await db.comment.create({
     data: { postId, authorId: user.id, text: parsed.data },

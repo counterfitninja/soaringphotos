@@ -9,6 +9,7 @@ export const postInclude = {
     orderBy: { createdAt: "asc" as const },
     include: { author: { select: { id: true, username: true } } },
   },
+  feed: { select: { id: true, name: true } },
   _count: { select: { likes: true, comments: true } },
 } satisfies Prisma.PostInclude;
 

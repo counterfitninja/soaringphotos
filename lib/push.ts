@@ -69,11 +69,13 @@ export async function sendPushNotifications({
   actorUsername,
   caption,
   postId,
+  feedId,
 }: {
   recipients: { id: string; type: "mention" | "post" }[];
   actorUsername: string;
   caption: string;
   postId: string;
+  feedId: string;
 }) {
   if (!isPushConfigured() || recipients.length === 0 || !publicKey || !privateKey) {
     pushDebug("skipped send", {
@@ -115,7 +117,7 @@ export async function sendPushNotifications({
             expirationTime: subscription.expirationTime?.getTime() ?? null,
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
-          JSON.stringify({ title, body, url: `/post/${postId}`, tag: `post-${postId}` }),
+          JSON.stringify({ title, body, url: `/post/${postId}`, tag: `post-${postId}`, feedId }),
           { TTL: 60, urgency: "high" },
         );
         pushDebug("sent notification", {

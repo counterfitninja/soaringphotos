@@ -18,6 +18,22 @@ export const captionSchema = z.string().max(500, "Captions are limited to 500 ch
 
 export const commentSchema = z.string().trim().min(1).max(500);
 
+// ---------- feeds ----------
+
+export const FEED_NAME_MIN = 1;
+export const FEED_NAME_MAX = 50;
+
+export const feedNameSchema = z
+  .string()
+  .trim()
+  .min(FEED_NAME_MIN, "Feed name is required")
+  .max(FEED_NAME_MAX, "Feed name must be at most 50 characters");
+
+export const feedDescriptionSchema = z.string().trim().max(200, "Description is limited to 200 characters");
+
+/** Special feed-switch target meaning the amalgamated "all my feeds" view. */
+export const ALL_FEEDS = "all";
+
 // ---------- media ----------
 
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

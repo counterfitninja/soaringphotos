@@ -13,12 +13,19 @@ export async function deletePost(postId: string): Promise<DeletePostResult> {
     where: { id: postId },
     select: {
       authorId: true,
+      feedId: true,
       author: { select: { username: true } },
       media: { select: { key: true } },
     },
   });
 
   if (!post) return { error: "Post not found." };
+  // Feed membership gate: no existence leak across feeds (FR-010).
+  const membership = await db.feedMembership.findUnique({
+    where: { userId_feedId: { userId: user.id, feedId: post.feedId } },
+    select: { id: true },
+  });
+  if (!membership) return { error: "Post not found." };
   if (post.authorId !== user.id) return { error: "You can only delete your own posts." };
 
   await db.post.delete({ where: { id: postId } });

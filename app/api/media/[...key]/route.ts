@@ -3,31 +3,55 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getMedia } from "@/lib/storage";
 
+const LEGACY_KEY_RE = /^[a-zA-Z0-9._-]+$/;
+const FEED_KEY_RE = /^feeds\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9._-]+)$/;
+const DEFAULT_FEED_ID = "default-feed-family";
+
 /**
- * GET /api/media/[key] — serves uploaded media to signed-in members only.
+ * GET /api/media/[key] — serves uploaded media to signed-in members of the
+ * owning feed only (FR-011). Keys are either legacy `<uuid>.<ext>` (resolved to
+ * the default feed) or feed-namespaced `feeds/<feedId>/<uuid>.<ext>`.
  */
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ key: string }> },
+  { params }: { params: Promise<{ key: string[] }> },
 ) {
   const session = await getSession();
   if (!session.userId) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const { key } = await params;
-  // Keys are generated as <uuid>.<ext>; validate to prevent path traversal.
-  if (!/^[a-zA-Z0-9._-]+$/.test(key)) {
+  const { key: segments } = await params;
+  const key = segments.map((s) => decodeURIComponent(s)).join("/");
+
+  // Validate the key shape to prevent path traversal, and extract the owning feed.
+  const feedMatch = FEED_KEY_RE.exec(key);
+  if (feedMatch === null && !LEGACY_KEY_RE.test(key)) {
     return new NextResponse("Invalid key", { status: 400 });
   }
 
   const [media, avatar] = await Promise.all([
-    db.media.findFirst({ where: { key }, select: { mimeType: true } }),
+    db.media.findFirst({ where: { key }, select: { mimeType: true, post: { select: { feedId: true } } } }),
     db.user.findFirst({ where: { avatarKey: key }, select: { avatarMimeType: true } }),
   ]);
   const mimeType = media?.mimeType ?? avatar?.avatarMimeType;
   if (!mimeType) {
     return new NextResponse("Not found", { status: 404 });
+  }
+
+  // Authorization: media owned by a post is only visible to members of that
+  // post's feed. Avatars remain visible to any signed-in member (they appear
+  // wherever the member appears, across shared feeds).
+  if (media) {
+    const owningFeedId = media.post?.feedId ?? feedMatch?.[1] ?? DEFAULT_FEED_ID;
+    const membership = await db.feedMembership.findUnique({
+      where: { userId_feedId: { userId: session.userId, feedId: owningFeedId } },
+      select: { id: true },
+    });
+    if (!membership) {
+      // Same response as nonexistent media — no feed existence leak (FR-010).
+      return new NextResponse("Not found", { status: 404 });
+    }
   }
 
   const file = await getMedia(key);

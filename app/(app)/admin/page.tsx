@@ -172,6 +172,9 @@ export default async function AdminPage() {
             <p className="mt-1 text-xs text-neutral-500">Single-use links for adding family members.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/feeds" className={btnSmall}>
+              Manage feeds
+            </Link>
             <Link href="/admin/invites" className={btnSmall}>
               Create new invites
             </Link>

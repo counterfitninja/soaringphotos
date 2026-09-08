@@ -30,6 +30,33 @@ model User {
   notificationMutes NotificationMute[] @relation("MuteOwner")
   mutedByOthers    NotificationMute[] @relation("MutedByOthers")
   passkeys         WebAuthnCredential[]
+  feedMemberships  FeedMembership[]
+}
+
+model Feed {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  memberships   FeedMembership[]
+  posts         Post[]
+  invites       Invite[]
+  notifications Notification[]
+}
+
+model FeedMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedId    String
+  feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  role      String   @default("member") // "manager" | "member"
+  createdAt DateTime @default(now())
+
+  @@unique([userId, feedId])
+  @@index([feedId])
+  @@index([userId])
 }
 
 model WebAuthnCredential {
@@ -55,6 +82,10 @@ model Invite {
   usedAt      DateTime?
   expiresAt   DateTime
   createdAt   DateTime  @default(now())
+  feedId      String
+  feed        Feed      @relation(fields: [feedId], references: [id])
+
+  @@index([feedId])
 }
 
 model Post {
@@ -63,6 +94,8 @@ model Post {
   author    User     @relation(fields: [authorId], references: [id])
   caption   String   @default("")
   createdAt DateTime @default(now())
+  feedId    String
+  feed      Feed     @relation(fields: [feedId], references: [id])
 
   media    Media[]
   likes    Like[]
@@ -70,7 +103,7 @@ model Post {
   shares   SharedPost[]
   notifications Notification[]
 
-  @@index([createdAt])
+  @@index([feedId, createdAt])
 }
 
 model Media {
@@ -132,9 +165,12 @@ model Notification {
   type      String
   readAt    DateTime?
   createdAt DateTime  @default(now())
+  feedId    String
+  feed      Feed      @relation(fields: [feedId], references: [id])
 
   @@unique([userId, postId, type])
   @@index([userId, createdAt])
+  @@index([feedId])
 }
 
 model PushSubscription {

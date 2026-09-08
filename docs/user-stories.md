@@ -1,10 +1,74 @@
 # Famstagram User Stories and Acceptance Criteria
 
-**Review date**: 2026-09-07
+**Review date**: 2026-09-08
 **Source**: Current repository behavior and `docs/features.md`
 
 Acceptance criteria describe observable behavior. `Implemented` stories reflect current behavior;
 `Specified` stories are defined in the storage-cleanup specification but are not yet implemented.
+
+## Epic 0: Multiple Private Feeds
+
+> Implemented in the multi-feed feature (`specs/002-multi-feed-access`). One deployment hosts many
+> named private feeds; all content is scoped to exactly one feed and visible only to its members.
+
+### F-0.1 Feed membership and switching
+
+**US-0.1.1** As a member of multiple feeds, I want to switch which feed I'm viewing so I can keep
+separate circles (e.g. my friends vs. the family) in one account.
+
+- **Given** I belong to two feeds, **when** I pick the other feed in the selector, **then** the
+  timeline, post detail, comments, likes, and notifications show only that feed's content.
+- **Given** I switched feeds and closed the app, **when** I reopen it, **then** my last-selected
+  feed is still active.
+
+**US-0.1.2** As a member of a single feed, I want the app to behave exactly as before so the
+feed feature adds no friction.
+
+- **Given** I belong to exactly one feed, **when** I browse, **then** the selector is a static
+  label and posting requires no feed choice.
+
+**US-0.1.3** As a non-member, I must not be able to discover that another feed exists.
+
+- **Given** a feed I'm not in, **when** I open a direct link to its post or media, **then** I get
+  the same "not found" as if it didn't exist, and its name/members never appear in search,
+  suggestions, or errors.
+
+### F-0.2 Posting to a chosen feed
+
+**US-0.2.1** As a multi-feed member, I want to choose which feed a post goes to so I never share
+with the wrong circle.
+
+- **Given** I'm composing with feed A active, **when** I open the composer, **then** the
+  destination defaults to A and I can change it before publishing.
+- **Given** I publish to feed B, **when** members of A look, **then** they never see it.
+
+### F-0.3 Amalgamated view
+
+**US-0.3.1** As a multi-feed member, I want an "All feeds" view so I can casually browse
+everything without switching.
+
+- **Given** I open "All feeds", **when** the timeline loads, **then** posts from all my feeds
+  merge newest-first and each carries an always-visible feed label.
+
+### F-0.4 Feed administration
+
+**US-0.4.1** As the global admin, I want to create feeds and appoint per-feed managers so circles
+can run themselves (e.g. my daughter manages her friends feed).
+
+- **Given** I create a feed and appoint a manager, **when** that manager signs in, **then** they
+  can invite/add/remove members only within that feed.
+
+**US-0.4.2** As a feed manager, I want to invite someone directly into my feed so they land in the
+right circle.
+
+- **Given** a feed-scoped invite, **when** they register, **then** their account is a member of
+  exactly that feed.
+
+**US-0.4.3** As a manager, I want removals to take effect immediately so a removed member loses
+all access at once.
+
+- **Given** I remove a member, **when** they browse, **then** the feed vanishes from their
+  selector and its posts/media/notifications are inaccessible.
 
 ## Epic 1: Family Identity and Access
 

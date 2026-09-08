@@ -5,6 +5,8 @@ export interface SessionData {
   userId?: string;
   username?: string;
   role?: string;
+  activeFeedId?: string;
+  feedViewMode?: "feed" | "all";
 }
 
 export const sessionOptions: SessionOptions = {

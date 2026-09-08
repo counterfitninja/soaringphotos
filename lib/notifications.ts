@@ -15,16 +15,20 @@ export async function createPostNotifications({
   postId,
   authorId,
   caption,
+  feedId,
 }: {
   postId: string;
   authorId: string;
   caption: string;
+  feedId: string;
 }) {
   const mentionedUsernames = new Set(extractMentionedUsernames(caption));
-  const recipients = await db.user.findMany({
-    where: { id: { not: authorId } },
-    select: { id: true, username: true },
+  // Only members of the post's feed are notified (FR-014).
+  const memberships = await db.feedMembership.findMany({
+    where: { feedId, userId: { not: authorId } },
+    select: { user: { select: { id: true, username: true } } },
   });
+  const recipients = memberships.map((m) => m.user);
 
   if (recipients.length === 0) return;
 
@@ -50,12 +54,13 @@ export async function createPostNotifications({
       actorId: authorId,
       postId,
       type: recipient.type,
+      feedId,
     })),
   });
 
   const author = await db.user.findUnique({ where: { id: authorId }, select: { username: true } });
   if (author) {
-    await sendPushNotifications({ recipients: recipientsWithType, actorUsername: author.username, caption, postId });
+    await sendPushNotifications({ recipients: recipientsWithType, actorUsername: author.username, caption, postId, feedId });
   }
 }
 
@@ -71,10 +76,14 @@ export async function createCommentNotifications({
   const mentionedUsernames = new Set(extractMentionedUsernames(text));
   if (mentionedUsernames.size === 0) return;
 
-  const users = await db.user.findMany({
-    where: { id: { not: authorId } },
-    select: { id: true, username: true },
+  // Only members of the post's feed can be mentioned/notified (FR-014).
+  const post = await db.post.findUnique({ where: { id: postId }, select: { feedId: true } });
+  if (!post) return;
+  const memberships = await db.feedMembership.findMany({
+    where: { feedId: post.feedId, userId: { not: authorId } },
+    select: { user: { select: { id: true, username: true } } },
   });
+  const users = memberships.map((m) => m.user);
   // Mentions always notify, even if the recipient muted the author's regular posts.
   const recipients = users
     .filter((user) => mentionedUsernames.has(user.username.toLowerCase()))
@@ -88,13 +97,13 @@ export async function createCommentNotifications({
       db.notification.upsert({
         where: { userId_postId_type: { userId: recipient.id, postId, type: "mention" } },
         update: { readAt: null, actorId: authorId, createdAt: new Date() },
-        create: { userId: recipient.id, actorId: authorId, postId, type: "mention" },
+        create: { userId: recipient.id, actorId: authorId, postId, type: "mention", feedId: post.feedId },
       }),
     ),
   );
 
   const author = await db.user.findUnique({ where: { id: authorId }, select: { username: true } });
   if (author) {
-    await sendPushNotifications({ recipients, actorUsername: author.username, caption: text, postId });
+    await sendPushNotifications({ recipients, actorUsername: author.username, caption: text, postId, feedId: post.feedId });
   }
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CommentForm from "@/components/CommentForm";
 import DeletePostButton from "@/components/DeletePostButton";
+import FeedLabel from "@/components/FeedLabel";
 import LikeButton from "@/components/LikeButton";
 import MediaCarousel from "@/components/MediaCarousel";
 import ShareDialog from "@/components/ShareDialog";
@@ -12,11 +13,13 @@ export default function PostCard({
   currentUserId,
   members,
   showAllComments = false,
+  showFeedLabel = false,
 }: {
   post: PostWithRelations;
   currentUserId: string;
   members: MemberOption[];
   showAllComments?: boolean;
+  showFeedLabel?: boolean;
 }) {
   const liked = post.likes.some((l) => l.userId === currentUserId);
   const comments = showAllComments ? post.comments : post.comments.slice(-3);
@@ -48,6 +51,7 @@ export default function PostCard({
           </Link>
           <p className="text-xs text-neutral-400">{timeAgo(post.createdAt)}</p>
         </div>
+        {showFeedLabel && <FeedLabel name={post.feed.name} />}
         {post.author.id === currentUserId && <DeletePostButton postId={post.id} />}
       </header>
 

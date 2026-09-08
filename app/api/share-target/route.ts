@@ -38,13 +38,28 @@ export async function POST(req: Request) {
   const captionCheck = captionSchema.safeParse(sharedText);
   const caption = captionCheck.success ? captionCheck.data : "";
 
+  // Shares land in the user's active feed after membership verification (contract §5).
+  const memberships = await db.feedMembership.findMany({
+    where: { userId: session.userId },
+    select: { feedId: true },
+    orderBy: { feed: { name: "asc" } },
+  });
+  const feedId =
+    memberships.find((m) => m.feedId === session.activeFeedId)?.feedId ?? memberships[0]?.feedId;
+  if (!feedId) {
+    return NextResponse.redirect(
+      toRequestUrl(req, "/create?error=You+have+not+been+added+to+any+feeds+yet."),
+      303,
+    );
+  }
+
   const post = await db.post.create({
-    data: { authorId: session.userId, caption },
+    data: { authorId: session.userId, caption, feedId },
   });
 
   try {
     for (const [index, file] of files.entries()) {
-      const { key, mimeType } = await saveMedia(file);
+      const { key, mimeType } = await saveMedia(file, feedId);
       await db.media.create({ data: { postId: post.id, key, mimeType, order: index } });
     }
   } catch (err) {
@@ -56,7 +71,7 @@ export async function POST(req: Request) {
     );
   }
 
-  await createPostNotifications({ postId: post.id, authorId: session.userId, caption });
+  await createPostNotifications({ postId: post.id, authorId: session.userId, caption, feedId });
 
   return NextResponse.redirect(toRequestUrl(req, `/post/${post.id}`), 303);
 }

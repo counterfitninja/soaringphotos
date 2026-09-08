@@ -1,17 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
 import { logout } from "@/app/actions/auth";
+import FeedSwitcher, { type SwitcherFeed } from "@/components/FeedSwitcher";
 
 export default function Navbar({
   username,
   role,
   unreadShares,
   unreadNotifications,
+  feeds,
+  activeFeedId,
+  viewMode,
+  managesAnyFeed = false,
 }: {
   username: string;
   role: string;
   unreadShares: number;
   unreadNotifications: number;
+  feeds?: SwitcherFeed[];
+  activeFeedId?: string | null;
+  viewMode?: "feed" | "all";
+  managesAnyFeed?: boolean;
 }) {
   return (
     <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
@@ -21,6 +30,14 @@ export default function Navbar({
           <span>Famstagram</span>
         </Link>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
+          {feeds && feeds.length > 0 && (
+            <FeedSwitcher
+              feeds={feeds}
+              activeFeedId={activeFeedId ?? null}
+              viewMode={viewMode ?? "feed"}
+              allFeedsEnabled
+            />
+          )}
           <Link
             href="/create"
             className="hidden font-medium text-neutral-700 hover:text-sky-700 sm:inline"
@@ -46,6 +63,11 @@ export default function Navbar({
           {role === "admin" && (
             <Link href="/admin" className="text-neutral-700 hover:text-sky-700">
               Admin
+            </Link>
+          )}
+          {managesAnyFeed && (
+            <Link href="/feeds" className="text-neutral-700 hover:text-sky-700">
+              Feeds
             </Link>
           )}
           <Link

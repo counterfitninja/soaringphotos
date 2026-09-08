@@ -6,7 +6,8 @@ import { saveMedia } from "@/lib/storage";
 import { captionSchema, validateMediaFiles } from "@/lib/validation";
 
 /**
- * POST /api/posts — multipart form with "caption" and one or more "media" files.
+ * POST /api/posts — multipart form with "caption", one or more "media" files,
+ * and an optional "feedId" destination (defaults to the session's active feed).
  * Implemented as a route handler (not a server action) so large video uploads
  * are not constrained by the server-action body size limit.
  */
@@ -35,13 +36,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: mediaCheck.error }, { status: 400 });
   }
 
+  // Resolve the destination feed: explicit choice, else the session's active feed.
+  // The destination MUST be one of the author's memberships (FR-006, contract §3).
+  const memberships = await db.feedMembership.findMany({
+    where: { userId: session.userId },
+    select: { feedId: true, feed: { select: { name: true } } },
+    orderBy: { feed: { name: "asc" } },
+  });
+  if (memberships.length === 0) {
+    return NextResponse.json(
+      { error: "You haven't been added to any feeds yet." },
+      { status: 403 },
+    );
+  }
+  const requestedFeedId = String(form.get("feedId") ?? "").trim() || session.activeFeedId || "";
+  const destination = memberships.find((m) => m.feedId === requestedFeedId) ?? null;
+  const feedId = destination?.feedId ?? (requestedFeedId ? null : memberships[0].feedId);
+  if (!feedId) {
+    return NextResponse.json(
+      { error: `Choose one of your feeds: ${memberships.map((m) => m.feed.name).join(", ")}.` },
+      { status: 400 },
+    );
+  }
+
   const post = await db.post.create({
-    data: { authorId: session.userId, caption: captionCheck.data },
+    data: { authorId: session.userId, caption: captionCheck.data, feedId },
   });
 
   try {
     for (const [index, file] of files.entries()) {
-      const { key, mimeType } = await saveMedia(file);
+      const { key, mimeType } = await saveMedia(file, feedId);
       await db.media.create({
         data: { postId: post.id, key, mimeType, order: index },
       });
@@ -59,6 +83,7 @@ export async function POST(req: Request) {
     postId: post.id,
     authorId: session.userId,
     caption: captionCheck.data,
+    feedId,
   });
 
   return NextResponse.json({ id: post.id });

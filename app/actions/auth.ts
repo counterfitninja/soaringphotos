@@ -89,10 +89,17 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
         avatarMimeType: avatar?.mimeType,
       },
     });
-    await db.invite.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date(), usedById: user.id },
-    });
+    // The new account joins exactly the feed the invite was scoped to (FR-012),
+    // and the invite is consumed — all atomically.
+    await db.$transaction([
+      db.feedMembership.create({
+        data: { userId: user.id, feedId: invite.feedId, role: "member" },
+      }),
+      db.invite.update({
+        where: { id: invite.id },
+        data: { usedAt: new Date(), usedById: user.id },
+      }),
+    ]);
 
   } catch (error) {
     if (avatar) await deleteMedia(avatar.key);
@@ -103,6 +110,9 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   session.userId = user.id;
   session.username = user.username;
   session.role = user.role;
+  // Land the new account in the feed it was invited into (FR-012).
+  session.activeFeedId = invite.feedId;
+  session.feedViewMode = "feed";
   await session.save();
 
   redirect("/");

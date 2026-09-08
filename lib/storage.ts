@@ -41,9 +41,9 @@ function uploadRoot() {
 
 const localDriver: StorageDriver = {
   async save(body, key) {
-    const dir = uploadRoot();
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, key), body);
+    const filePath = path.join(uploadRoot(), key);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, body);
   },
   async get(key) {
     try {
@@ -158,13 +158,18 @@ async function optimizeImage(file: File): Promise<{ body: Buffer; mimeType: stri
   return { body: await pipeline.toBuffer(), mimeType: file.type };
 }
 
-/** Saves an uploaded file, optimizing supported raster images to conserve storage. */
-export async function saveMedia(file: File): Promise<{ key: string; mimeType: string }> {
+/**
+ * Saves an uploaded file, optimizing supported raster images to conserve storage.
+ * When `feedId` is provided the storage key is namespaced `feeds/<feedId>/...` so
+ * each feed's objects stay self-contained (splittable per FR-001) and the media
+ * route can resolve the owning feed directly from the key.
+ */
+export async function saveMedia(file: File, feedId?: string): Promise<{ key: string; mimeType: string }> {
   const stored = file.type.startsWith("image/")
     ? await optimizeImage(file)
     : { body: Buffer.from(await file.arrayBuffer()), mimeType: file.type };
   const ext = EXT_BY_MIME[stored.mimeType] ?? path.extname(file.name).toLowerCase();
-  const key = `${randomUUID()}${ext}`;
+  const key = feedId ? `feeds/${feedId}/${randomUUID()}${ext}` : `${randomUUID()}${ext}`;
   await driver().save(stored.body, key, stored.mimeType);
   return { key, mimeType: stored.mimeType };
 }

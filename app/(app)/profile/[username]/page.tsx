@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { membershipFeedIds, requireFeedContext } from "@/lib/feed-context";
 import { initials } from "@/lib/utils";
 import PasskeySetupButton from "@/components/PasskeySetupButton";
 import ProfilePhotoForm from "@/components/ProfilePhotoForm";
@@ -11,14 +11,18 @@ export default async function ProfilePage({
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const viewer = await requireUser();
+  const ctx = await requireFeedContext();
+  const viewer = ctx.user;
   const { username } = await params;
+  const feedIds = membershipFeedIds(ctx);
 
   const profile = await db.user.findUnique({
     where: { username },
     include: {
-      _count: { select: { posts: true } },
+      _count: { select: { posts: { where: { feedId: { in: feedIds } } } } },
+      // Only posts from feeds the viewer shares with the profile owner (FR-010).
       posts: {
+        where: { feedId: { in: feedIds } },
         orderBy: { createdAt: "desc" },
         include: {
           media: { orderBy: { order: "asc" }, take: 1 },

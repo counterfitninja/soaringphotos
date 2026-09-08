@@ -12,9 +12,17 @@ export async function GET(req: Request) {
   const rawQuery = (searchParams.get("q") ?? "").trim();
   const query = rawQuery.slice(0, 20);
 
+  // Suggest only users sharing at least one feed with the requester (FR-010).
+  const memberships = await db.feedMembership.findMany({
+    where: { userId: session.userId },
+    select: { feedId: true },
+  });
+  const feedIds = memberships.map((m) => m.feedId);
+
   const users = await db.user.findMany({
     where: {
       id: { not: session.userId },
+      feedMemberships: { some: { feedId: { in: feedIds } } },
       ...(query
         ? {
             username: {

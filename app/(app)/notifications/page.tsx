@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { markAllNotificationsRead } from "@/app/actions/notifications";
-import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { membershipFeedIds, requireFeedContext } from "@/lib/feed-context";
 import { timeAgo } from "@/lib/utils";
 
 export default async function NotificationsPage() {
-  const user = await requireUser();
+  const ctx = await requireFeedContext();
+  const { user, memberships } = ctx;
+  const feedIds = membershipFeedIds(ctx);
+  const feedNameById = new Map(memberships.map((m) => [m.feedId, m.feedName]));
+  // Combined center: notifications from all of the user's feeds, feed-labeled (FR-014a).
   const notifications = await db.notification.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, feedId: { in: feedIds } },
     include: {
       actor: { select: { username: true } },
       post: { include: { media: { orderBy: { order: "asc" }, take: 1 } } },
@@ -109,11 +113,18 @@ export default async function NotificationsPage() {
                         <span className="font-semibold text-neutral-900">{notification.actor.username}</span>{" "}
                         <span>{actionLabel}</span>
                       </p>
-                      {!notification.readAt && (
-                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">
-                          New
-                        </span>
-                      )}
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {feedNameById.get(notification.feedId) && (
+                          <span className="rounded-full bg-sky-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-sky-700 ring-1 ring-inset ring-sky-200">
+                            {feedNameById.get(notification.feedId)}
+                          </span>
+                        )}
+                        {!notification.readAt && (
+                          <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">
+                            New
+                          </span>
+                        )}
+                      </span>
                     </div>
 
                     {notification.post.caption && (

@@ -4,16 +4,20 @@ A private, invite-only Instagram-style photo & video sharing app for family memb
 
 ## Features
 
-- **Invite-only registration** — admins generate single-use invite links (`/admin/invites`); links expire after 7 days
-- **Family feed** — a public stream (visible to all registered members) of photo/video posts, newest first, with pagination
+- **Multiple private feeds** — one deployment hosts many named private feeds (e.g. "Family" and a daughter's "Friends"); each post, comment, like, and notification is scoped to exactly one feed and visible only to its members
+- **Feed switcher + "All feeds"** — members of multiple feeds switch via the selector (navbar / mobile tab bar) with per-feed unread badges, or browse an amalgamated, feed-labeled "All feeds" timeline
+- **Feed management** — the global admin creates feeds (`/feeds`) and appoints per-feed managers; managers invite, add, and remove members within their own feeds only
+- **Feed-scoped invites** — invite links now land the new account in exactly the feed the inviter chose; links are single-use and expire after 7 days
+- **Choose your audience** — multi-feed members pick which feed each post goes to (defaults to the active feed)
+- **Invite-only registration** — admins/managers generate single-use invite links; links expire after 7 days
 - **Posts** — up to 10 images (JPG/PNG/WebP/GIF) or one short video (MP4/WebM/MOV, ≤60s, ≤100 MB) plus a short caption (≤500 chars); multi-image posts render as a carousel
 - **Likes** — heart any post, with live count
 - **Comments** — comment on posts from the feed or the post detail page
-- **Forward / share** — send a post to another family member; it lands in their "Shared with me" inbox (unread badge in the navbar)
-- **Profiles** — per-user page with their post grid and an optional profile photo
-- **Private media** — uploaded files are served through an authenticated route, never from a public folder
+- **Forward / share** — send a post to another member of the same feed; it lands in their "Shared with me" inbox (unread badge in the navbar)
+- **Profiles** — per-user page showing only their posts from feeds you share
+- **Private media** — uploaded files are served through an authenticated route scoped to the owning feed, never from a public folder
 - **Passkey login** — use Face ID / Touch ID / Windows Hello to sign in without a password
-- **PWA push notifications** — opt in on the Notifications page to receive new-post and mention alerts while the app is closed
+- **PWA push notifications** — opt in on the Notifications page to receive new-post and mention alerts (feed-labeled) while the app is closed
 
 ## Tech stack
 

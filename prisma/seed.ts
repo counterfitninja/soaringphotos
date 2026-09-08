@@ -27,11 +27,24 @@ async function main() {
     console.log(`Admin user "${username}" already exists, skipping.`);
   }
 
+  // Ensure the default feed exists and the admin manages it.
+  const feed = await db.feed.upsert({
+    where: { id: "default-feed-family" },
+    create: { id: "default-feed-family", name: "Family", description: "The original family feed" },
+    update: {},
+  });
+  await db.feedMembership.upsert({
+    where: { userId_feedId: { userId: admin.id, feedId: feed.id } },
+    create: { userId: admin.id, feedId: feed.id, role: "manager" },
+    update: {},
+  });
+
   const token = randomBytes(16).toString("hex");
   await db.invite.create({
     data: {
       token,
       createdById: admin.id,
+      feedId: feed.id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });

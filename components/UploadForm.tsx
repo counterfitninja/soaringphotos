@@ -11,12 +11,24 @@ import {
   validateMediaFiles,
 } from "@/lib/validation";
 
-export default function UploadForm() {
+export interface FeedOption {
+  feedId: string;
+  feedName: string;
+}
+
+export default function UploadForm({
+  feeds = [],
+  defaultFeedId,
+}: {
+  feeds?: FeedOption[];
+  defaultFeedId?: string | null;
+}) {
   const router = useRouter();
   const captionRef = useRef<HTMLTextAreaElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [feedId, setFeedId] = useState<string>(defaultFeedId ?? feeds[0]?.feedId ?? "");
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const [mentionCaret, setMentionCaret] = useState<number | null>(null);
@@ -156,6 +168,7 @@ export default function UploadForm() {
     try {
       const form = new FormData();
       form.append("caption", caption);
+      if (feedId) form.append("feedId", feedId);
       for (const f of files) form.append("media", f);
 
       const res = await fetch("/api/posts", { method: "POST", body: form });
@@ -175,6 +188,28 @@ export default function UploadForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {feeds.length > 1 && (
+        <div>
+          <label htmlFor="feed" className="mb-1 block text-xs font-medium text-neutral-600">
+            Post to feed
+          </label>
+          <select
+            id="feed"
+            value={feedId}
+            onChange={(e) => setFeedId(e.target.value)}
+            className={inputCls}
+          >
+            {feeds.map((feed) => (
+              <option key={feed.feedId} value={feed.feedId}>
+                {feed.feedName}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-neutral-400">
+            Only members of the selected feed will see this post.
+          </p>
+        </div>
+      )}
       <div>
         <div className="rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-4 text-center text-sm text-neutral-500">
           <span className="mb-1 block text-2xl">📷</span>
