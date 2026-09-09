@@ -1,5 +1,6 @@
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { applicationRoot } from "@/lib/runtime-path";
 
 /**
  * Prisma resolves relative `file:` URLs against the schema directory for CLI commands,
@@ -14,7 +15,7 @@ function resolveDatabaseUrl(): string | undefined {
   const target = url.slice("file:".length);
   if (target === "" || target.startsWith(":") || path.isAbsolute(target)) return url;
 
-  return `file:${path.resolve(process.cwd(), "prisma", target)}`;
+  return `file:${path.resolve(applicationRoot(), "prisma", target)}`;
 }
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
