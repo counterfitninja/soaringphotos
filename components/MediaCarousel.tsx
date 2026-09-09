@@ -14,14 +14,13 @@ export default function MediaCarousel({ media }: { media: MediaItem[] }) {
 
   const current = media[Math.min(index, media.length - 1)];
   const isVideo = current.mimeType.startsWith("video/");
-  const mediaUrl = `/api/media/${current.key.split("/").map(encodeURIComponent).join("/")}`;
 
   return (
     <div className="relative aspect-square select-none bg-black">
       {isVideo ? (
         <video
           key={current.id}
-          src={mediaUrl}
+          src={`/api/media/${current.key}`}
           controls
           playsInline
           preload="metadata"
@@ -31,7 +30,7 @@ export default function MediaCarousel({ media }: { media: MediaItem[] }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={current.id}
-          src={mediaUrl}
+          src={`/api/media/${current.key}`}
           alt=""
           className="h-full w-full object-contain"
         />

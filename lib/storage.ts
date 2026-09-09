@@ -36,7 +36,10 @@ const EXT_BY_MIME: Record<string, string> = {
 // ---------- local disk driver ----------
 
 function uploadRoot() {
-  return path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
+  // npm exposes the directory used to launch the app even when the standalone
+  // server changes its working directory.
+  const applicationRoot = process.env.INIT_CWD ?? process.cwd();
+  return path.resolve(applicationRoot, process.env.UPLOAD_DIR ?? "./uploads");
 }
 
 const localDriver: StorageDriver = {
