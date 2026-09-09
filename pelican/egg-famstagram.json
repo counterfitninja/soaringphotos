@@ -4,7 +4,7 @@
     "version": "PTDL_v2"
   },
   "exported_at": "2026-09-05T00:00:00+00:00",
-  "name": "Famstagram v1.1.6",
+  "name": "Famstagram v1.1.7",
   "author": "admin@example.com",
   "description": "Private, invite-only family photo and video sharing app built with Next.js, Prisma, and SQLite.",
   "features": null,
@@ -62,6 +62,46 @@
       "description": "Keep the default to store the SQLite database at /home/container/dev.db.",
       "env_variable": "DATABASE_URL",
       "default_value": "file:../dev.db",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "App Origin",
+      "description": "Canonical public URL of the app, including https://, used for server-side redirects behind a reverse proxy.",
+      "env_variable": "APP_ORIGIN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "WebAuthn Origin",
+      "description": "Exact public origin used by passkeys, including scheme and port when applicable, for example https://photos.example.com.",
+      "env_variable": "WEBAUTHN_ORIGIN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "WebAuthn Relying Party ID",
+      "description": "Hostname used by passkeys without scheme or port, for example photos.example.com.",
+      "env_variable": "WEBAUTHN_RP_ID",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:255",
+      "field_type": "text"
+    },
+    {
+      "name": "WebAuthn Relying Party Name",
+      "description": "Friendly application name shown by the passkey provider.",
+      "env_variable": "WEBAUTHN_RP_NAME",
+      "default_value": "Famstagram",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string|max:255",
