@@ -5,7 +5,7 @@ import AdminPushPwaTools from "@/components/AdminPushPwaTools";
 import CopyInviteLink from "@/components/CopyInviteLink";
 import DeleteUserButton from "@/components/DeleteUserButton";
 import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, getDatabaseLocation } from "@/lib/db";
 import { isPushConfigured } from "@/lib/push";
 import { getMediaMetadata } from "@/lib/storage";
 import { btnSmall } from "@/lib/ui";
@@ -105,6 +105,7 @@ export default async function AdminPage() {
   const [postCount, commentCount, likeCount, shareCount, unreadAlertCount, pushSubCount] = totals;
   const activeInviteCount = invites.filter((invite) => !invite.usedAt && invite.expiresAt > now).length;
   const pushConfigured = isPushConfigured();
+  const databaseLocation = getDatabaseLocation();
   const largestFiles = mediaSizes
     .filter((media): media is typeof media & { size: number } => media.size !== null)
     .sort((first, second) => second.size - first.size)
@@ -141,6 +142,14 @@ export default async function AdminPage() {
             <p className="mt-1 text-xs text-neutral-500">{stat.detail}</p>
           </div>
         ))}
+      </section>
+
+      <section className="rounded-2xl bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-semibold">Database</h2>
+        <p className="mt-1 text-xs text-neutral-500">The database file currently used by this server.</p>
+        <code className="mt-3 block overflow-x-auto rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
+          {databaseLocation}
+        </code>
       </section>
 
       <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-sm space-y-3">

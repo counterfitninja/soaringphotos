@@ -18,6 +18,13 @@ function resolveDatabaseUrl(): string | undefined {
   return `file:${path.resolve(applicationRoot(), "prisma", target)}`;
 }
 
+export function getDatabaseLocation(): string {
+  const url = resolveDatabaseUrl();
+  if (!url) return "DATABASE_URL is not configured";
+  if (url.startsWith("file:")) return url.slice("file:".length);
+  return "Non-SQLite database configured";
+}
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 export const db =
