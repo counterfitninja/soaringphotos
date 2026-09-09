@@ -6,6 +6,16 @@ import { getMedia } from "@/lib/storage";
 const LEGACY_KEY_RE = /^[a-zA-Z0-9._-]+$/;
 const FEED_KEY_RE = /^feeds\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9._-]+)$/;
 const DEFAULT_FEED_ID = "default-feed-family";
+const MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+};
 
 /**
  * GET /api/media/[key] — serves uploaded media to signed-in members of the
@@ -35,7 +45,9 @@ export async function GET(
     db.media.findFirst({ where: { key }, select: { mimeType: true, post: { select: { feedId: true } } } }),
     db.user.findFirst({ where: { avatarKey: key }, select: { avatarMimeType: true } }),
   ]);
-  const mimeType = media?.mimeType ?? avatar?.avatarMimeType;
+  const extension = key.split(".").pop()?.toLowerCase() ?? "";
+  const legacyMimeType = feedMatch === null ? MIME_BY_EXTENSION[extension] : undefined;
+  const mimeType = media?.mimeType ?? avatar?.avatarMimeType ?? legacyMimeType;
   if (!mimeType) {
     return new NextResponse("Not found", { status: 404 });
   }
@@ -43,8 +55,8 @@ export async function GET(
   // Authorization: media owned by a post is only visible to members of that
   // post's feed. Avatars remain visible to any signed-in member (they appear
   // wherever the member appears, across shared feeds).
-  if (media) {
-    const owningFeedId = media.post?.feedId ?? feedMatch?.[1] ?? DEFAULT_FEED_ID;
+  if (media || legacyMimeType) {
+    const owningFeedId = media?.post?.feedId ?? feedMatch?.[1] ?? DEFAULT_FEED_ID;
     const membership = await db.feedMembership.findUnique({
       where: { userId_feedId: { userId: session.userId, feedId: owningFeedId } },
       select: { id: true },
