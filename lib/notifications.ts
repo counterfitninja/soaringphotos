@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { sendPushNotifications } from "@/lib/push";
+import { getCommentNotificationRecipients } from "@/lib/notification-policy";
 
 const MENTION_RE = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{3,20})\b/g;
 
@@ -68,36 +69,48 @@ export async function createCommentNotifications({
   postId,
   authorId,
   text,
+  commentId,
 }: {
   postId: string;
   authorId: string;
   text: string;
+  commentId: string;
 }) {
   const mentionedUsernames = new Set(extractMentionedUsernames(text));
-  if (mentionedUsernames.size === 0) return;
-
-  // Only members of the post's feed can be mentioned/notified (FR-014).
-  const post = await db.post.findUnique({ where: { id: postId }, select: { feedId: true } });
+  const post = await db.post.findUnique({ where: { id: postId }, select: { feedId: true, authorId: true } });
   if (!post) return;
+
+  // Only members of the post's feed can be notified (FR-014).
   const memberships = await db.feedMembership.findMany({
     where: { feedId: post.feedId, userId: { not: authorId } },
     select: { user: { select: { id: true, username: true } } },
   });
   const users = memberships.map((m) => m.user);
-  // Mentions always notify, even if the recipient muted the author's regular posts.
-  const recipients = users
-    .filter((user) => mentionedUsernames.has(user.username.toLowerCase()))
-    .map((user) => ({ id: user.id, type: "mention" as const }));
+  const recipients = getCommentNotificationRecipients({
+    authorId,
+    ownerId: post.authorId,
+    mentionedUsernames,
+    users,
+  });
 
   if (recipients.length === 0) return;
 
-  // (userId, postId, type) is unique, so a repeat mention upserts: re-mark unread and point at the latest actor.
+  // (userId, commentId, type) is unique, so retries re-mark the same event unread instead of duplicating it.
   await Promise.all(
     recipients.map((recipient) =>
       db.notification.upsert({
-        where: { userId_postId_type: { userId: recipient.id, postId, type: "mention" } },
-        update: { readAt: null, actorId: authorId, createdAt: new Date() },
-        create: { userId: recipient.id, actorId: authorId, postId, type: "mention", feedId: post.feedId },
+        where: {
+          userId_commentId_type: { userId: recipient.id, commentId, type: recipient.type },
+        },
+        update: { readAt: null, actorId: authorId, postId, feedId: post.feedId, createdAt: new Date() },
+        create: {
+          userId: recipient.id,
+          actorId: authorId,
+          postId,
+          commentId,
+          type: recipient.type,
+          feedId: post.feedId,
+        },
       }),
     ),
   );

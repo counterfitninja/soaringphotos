@@ -6,7 +6,7 @@ import LikeButton from "@/components/LikeButton";
 import MediaCarousel from "@/components/MediaCarousel";
 import ShareDialog from "@/components/ShareDialog";
 import type { MemberOption, PostWithRelations } from "@/lib/types";
-import { initials, timeAgo } from "@/lib/utils";
+import { formatDateTime, initials, timeAgo } from "@/lib/utils";
 
 export default function PostCard({
   post,
@@ -88,15 +88,18 @@ export default function PostCard({
         )}
 
         {comments.map((comment) => (
-          <p key={comment.id} className="text-sm">
-            <Link
-              href={`/profile/${comment.author.username}`}
-              className="mr-1.5 font-semibold hover:underline"
-            >
-              {comment.author.username}
-            </Link>
-            {comment.text}
-          </p>
+          <div key={comment.id} className="text-sm">
+            <p>
+              <Link
+                href={`/profile/${comment.author.username}`}
+                className="mr-1.5 font-semibold hover:underline"
+              >
+                {comment.author.username}
+              </Link>
+              {comment.text}
+            </p>
+            <p className="mt-0.5 text-[10px] leading-4 text-neutral-400">{formatDateTime(comment.createdAt)}</p>
+          </div>
         ))}
 
         <CommentForm postId={post.id} members={members} />

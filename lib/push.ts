@@ -51,6 +51,27 @@ function endpointSummary(endpoint: string) {
   return { provider: url.hostname, endpointTail: endpoint.slice(-18) };
 }
 
+export function getPushNotificationContent(
+  type: "comment" | "mention" | "post",
+  actorUsername: string,
+  caption: string,
+) {
+  const title =
+    type === "mention"
+      ? `${actorUsername} tagged you`
+      : type === "comment"
+        ? `${actorUsername} commented on your post`
+        : `New post from ${actorUsername}`;
+  const body =
+    caption ||
+    (type === "mention"
+      ? "You were tagged in a post."
+      : type === "comment"
+        ? "Added a comment to your post."
+        : "Shared a new photo or video.");
+  return { title, body };
+}
+
 export function isPushConfigured() {
   return vapidConfigured;
 }
@@ -71,7 +92,7 @@ export async function sendPushNotifications({
   postId,
   feedId,
 }: {
-  recipients: { id: string; type: "mention" | "post" }[];
+  recipients: { id: string; type: "comment" | "mention" | "post" }[];
   actorUsername: string;
   caption: string;
   postId: string;
@@ -107,8 +128,7 @@ export async function sendPushNotifications({
   await Promise.allSettled(
     subscriptions.map(async (subscription) => {
       const type = notificationTypeByUserId.get(subscription.userId) ?? "post";
-      const title = type === "mention" ? `${actorUsername} tagged you` : `New post from ${actorUsername}`;
-      const body = caption || (type === "mention" ? "You were tagged in a post." : "Shared a new photo or video.");
+      const { title, body } = getPushNotificationContent(type, actorUsername, caption);
 
       try {
         await webpush.sendNotification(

@@ -16,6 +16,13 @@ export function timeAgo(date: Date): string {
   return "just now";
 }
 
+export function formatDateTime(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export function initials(username: string): string {
   return username.slice(0, 2).toUpperCase();
 }

@@ -27,11 +27,11 @@ export async function addComment(
   });
   if (!membership) return { error: "Post not found." }; // FR-010
 
-  await db.comment.create({
+  const comment = await db.comment.create({
     data: { postId, authorId: user.id, text: parsed.data },
   });
 
-  await createCommentNotifications({ postId, authorId: user.id, text: parsed.data });
+  await createCommentNotifications({ postId, authorId: user.id, text: parsed.data, commentId: comment.id });
 
   revalidatePath("/");
   revalidatePath(`/post/${postId}`);

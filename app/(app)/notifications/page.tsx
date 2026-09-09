@@ -14,6 +14,7 @@ export default async function NotificationsPage() {
     where: { userId: user.id, feedId: { in: feedIds } },
     include: {
       actor: { select: { username: true } },
+      comment: { select: { text: true } },
       post: { include: { media: { orderBy: { order: "asc" }, take: 1 } } },
     },
     orderBy: { createdAt: "desc" },
@@ -67,7 +68,11 @@ export default async function NotificationsPage() {
             const media = notification.post.media[0];
             const isVideo = media?.mimeType.startsWith("video/");
             const actionLabel =
-              notification.type === "mention" ? "mentioned you" : "shared a new post";
+              notification.type === "mention"
+                ? "mentioned you"
+                : notification.type === "comment"
+                  ? "commented on your post"
+                  : "shared a new post";
 
             return (
               <li key={notification.id}>
@@ -98,7 +103,7 @@ export default async function NotificationsPage() {
                         />
                       ))}
                     <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/85 text-[10px] font-bold text-sky-700 shadow-sm">
-                      {notification.type === "mention" ? "@" : "•"}
+                      {notification.type === "mention" ? "@" : notification.type === "comment" ? "💬" : "•"}
                     </span>
                     {isVideo && (
                       <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
@@ -127,9 +132,9 @@ export default async function NotificationsPage() {
                       </span>
                     </div>
 
-                    {notification.post.caption && (
+                    {(notification.comment?.text || notification.post.caption) && (
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">
-                        {notification.post.caption}
+                        {notification.comment?.text || notification.post.caption}
                       </p>
                     )}
 
