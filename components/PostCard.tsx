@@ -34,7 +34,7 @@ export default function PostCard({
           {post.author.avatarKey ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`/api/media/${post.author.avatarKey}`}
+              src={`/api/media/${post.author.avatarKey.split("/").map(encodeURIComponent).join("/")}`}
               alt={`${post.author.username}'s profile photo`}
               className="h-full w-full object-cover"
             />

@@ -14,15 +14,16 @@ const DEFAULT_FEED_ID = "default-feed-family";
  */
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ key: string[] }> },
+  { params }: { params: Promise<{ key: string | string[] }> },
 ) {
   const session = await getSession();
   if (!session.userId) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const { key: segments } = await params;
-  const key = segments.map((s) => decodeURIComponent(s)).join("/");
+  const { key: rawKey } = await params;
+  const segments = Array.isArray(rawKey) ? rawKey : [rawKey];
+  const key = segments.map((segment) => decodeURIComponent(segment)).join("/");
 
   // Validate the key shape to prevent path traversal, and extract the owning feed.
   const feedMatch = FEED_KEY_RE.exec(key);
