@@ -4,7 +4,7 @@ import { createPostNotifications } from "@/lib/notifications";
 import { getSession } from "@/lib/session";
 import { saveMedia } from "@/lib/storage";
 import { toRequestUrl } from "@/lib/request-url";
-import { captionSchema, validateMediaFiles } from "@/lib/validation";
+import { captionSchema, normalizeSharedMediaFile, validateMediaFiles } from "@/lib/validation";
 
 /**
  * POST /api/share-target — Web Share Target endpoint declared in the manifest.
@@ -25,7 +25,8 @@ export async function POST(req: Request) {
     return NextResponse.redirect(toRequestUrl(req, "/create?error=Shared+content+was+invalid."), 303);
   }
 
-  const files = form.getAll("media").filter((f): f is File => f instanceof File && f.size > 0);
+  const sharedFiles = form.getAll("media").filter((f): f is File => f instanceof File && f.size > 0);
+  const files = await Promise.all(sharedFiles.map(normalizeSharedMediaFile));
   const mediaCheck = validateMediaFiles(files);
   if (mediaCheck.error) {
     return NextResponse.redirect(

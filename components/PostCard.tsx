@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import CommentForm from "@/components/CommentForm";
 import DeletePostButton from "@/components/DeletePostButton";
+import EditLocationButton from "@/components/EditLocationButton";
 import FeedLabel from "@/components/FeedLabel";
 import LikeButton from "@/components/LikeButton";
 import MediaCarousel from "@/components/MediaCarousel";
-import PostMapModal from "@/components/PostMapModal";
 import ShareDialog from "@/components/ShareDialog";
 import type { MemberOption, PostWithRelations } from "@/lib/types";
 import { formatDateTime, initials, timeAgo } from "@/lib/utils";
+
+const PostMapModal = dynamic(() => import("@/components/PostMapModal"), { ssr: false });
 
 export default function PostCard({
   post,
@@ -18,12 +21,14 @@ export default function PostCard({
   members,
   showAllComments = false,
   showFeedLabel = false,
+  isAdmin = false,
 }: {
   post: PostWithRelations;
   currentUserId: string;
   members: MemberOption[];
   showAllComments?: boolean;
   showFeedLabel?: boolean;
+  isAdmin?: boolean;
 }) {
   const [showMapModal, setShowMapModal] = useState(false);
   const liked = post.likes.some((l) => l.userId === currentUserId);
@@ -77,6 +82,9 @@ export default function PostCard({
           </button>
         )}
 
+        {isAdmin && (
+          <EditLocationButton postId={post.id} latitude={post.latitude} longitude={post.longitude} />
+        )}
         {showFeedLabel && <FeedLabel name={post.feed.name} />}
         {post.author.id === currentUserId && <DeletePostButton postId={post.id} />}
       </header>

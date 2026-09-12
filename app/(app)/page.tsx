@@ -71,6 +71,7 @@ export default async function FeedPage({
           currentUserId={user.id}
           members={members}
           showFeedLabel={viewMode === "all"}
+          isAdmin={user.role === "admin"}
         />
       ))}
 

@@ -1,11 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { reverseGeocodeLocation } from "@/lib/geocoding";
 import { deleteMedia } from "@/lib/storage";
+import { latitudeSchema, longitudeSchema } from "@/lib/validation";
 
 export type DeletePostResult = { error?: string; success?: boolean };
+export type UpdatePostLocationResult = {
+  error?: string;
+  success?: boolean;
+  locationName?: string | null;
+};
 
 export async function deletePost(postId: string): Promise<DeletePostResult> {
   const user = await requireUser();
@@ -36,4 +43,36 @@ export async function deletePost(postId: string): Promise<DeletePostResult> {
   revalidatePath(`/post/${postId}`);
   revalidatePath(`/profile/${post.author.username}`);
   return { success: true };
+}
+
+/** Admin-only: manually set or clear a post's map location (e.g. when the source photo has no GPS EXIF). */
+export async function updatePostLocation(
+  postId: string,
+  latitude: number | null,
+  longitude: number | null,
+): Promise<UpdatePostLocationResult> {
+  await requireAdmin();
+
+  const post = await db.post.findUnique({ where: { id: postId }, select: { id: true } });
+  if (!post) return { error: "Post not found." };
+
+  let locationName: string | null = null;
+  if (latitude !== null && longitude !== null) {
+    const latCheck = latitudeSchema.safeParse(latitude);
+    const lngCheck = longitudeSchema.safeParse(longitude);
+    if (!latCheck.success) return { error: latCheck.error.issues[0].message };
+    if (!lngCheck.success) return { error: lngCheck.error.issues[0].message };
+    locationName = await reverseGeocodeLocation(latitude, longitude);
+  }
+
+  await db.post.update({
+    where: { id: postId },
+    data: { latitude, longitude, locationName },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/shared");
+  revalidatePath("/map");
+  revalidatePath(`/post/${postId}`);
+  return { success: true, locationName };
 }

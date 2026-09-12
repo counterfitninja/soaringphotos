@@ -24,5 +24,14 @@ export default async function PostPage({
   // 404 when the post is missing OR belongs to a feed the viewer can't see (FR-010).
   if (!post || !feedIds.includes(post.feedId)) notFound();
 
-  return <PostCard post={post} currentUserId={ctx.user.id} members={members} showAllComments showFeedLabel />;
+  return (
+    <PostCard
+      post={post}
+      currentUserId={ctx.user.id}
+      members={members}
+      showAllComments
+      showFeedLabel
+      isAdmin={ctx.user.role === "admin"}
+    />
+  );
 }

@@ -67,6 +67,51 @@ export function isVideo(file: { type: string }) {
   return VIDEO_TYPES.includes(file.type);
 }
 
+const MEDIA_TYPE_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "video/x-m4v": "video/mp4",
+};
+
+const MEDIA_TYPE_BY_EXTENSION: Record<string, string> = {
+  ".gif": "image/gif",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".mov": "video/quicktime",
+  ".mp4": "video/mp4",
+  ".png": "image/png",
+  ".webm": "video/webm",
+  ".webp": "image/webp",
+};
+
+function inferMediaTypeFromBytes(bytes: Uint8Array): string | null {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+  if (String.fromCharCode(...bytes.slice(0, 4)) === "GIF8") return "image/gif";
+  if (
+    String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
+    String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
+  ) return "image/webp";
+  if (String.fromCharCode(...bytes.slice(4, 8)) === "ftyp") return "video/mp4";
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  return null;
+}
+
+/** Repairs generic MIME metadata commonly supplied by Android share providers. */
+export async function normalizeSharedMediaFile(file: File): Promise<File> {
+  if (isImage(file) || isVideo(file)) return file;
+
+  const aliasType = MEDIA_TYPE_ALIASES[file.type.toLowerCase()];
+  const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0];
+  const inferredType =
+    aliasType ??
+    (extension ? MEDIA_TYPE_BY_EXTENSION[extension] : undefined) ??
+    inferMediaTypeFromBytes(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+
+  return inferredType
+    ? new File([file], file.name, { type: inferredType, lastModified: file.lastModified })
+    : file;
+}
+
 /**
  * Validates the media selection for a post:
  * either 1-10 images, or exactly 1 short video. Used on both client and server.
