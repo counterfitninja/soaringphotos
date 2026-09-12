@@ -89,13 +89,16 @@ model Invite {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  caption   String   @default("")
-  createdAt DateTime @default(now())
-  feedId    String
-  feed      Feed     @relation(fields: [feedId], references: [id])
+  id           String   @id @default(cuid())
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  caption      String   @default("")
+  createdAt    DateTime @default(now())
+  feedId       String
+  feed         Feed     @relation(fields: [feedId], references: [id])
+  latitude     Float?
+  longitude    Float?
+  locationName String?
 
   media    Media[]
   likes    Like[]

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { extractGpsCoordinates } from "@/lib/exif";
+import { reverseGeocodeLocation } from "@/lib/geocoding";
 import { createPostNotifications } from "@/lib/notifications";
 import { getSession } from "@/lib/session";
 import { saveMedia } from "@/lib/storage";
-import { captionSchema, validateMediaFiles } from "@/lib/validation";
+import { captionSchema, isImage, validateMediaFiles } from "@/lib/validation";
 
 /**
  * POST /api/posts — multipart form with "caption", one or more "media" files,
@@ -59,8 +61,37 @@ export async function POST(req: Request) {
     );
   }
 
+  // Extract EXIF GPS coordinates from the first image with valid GPS tags
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+  let locationName: string | null = null;
+
+  for (const file of files) {
+    if (isImage(file)) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const coords = await extractGpsCoordinates(Buffer.from(arrayBuffer));
+        if (coords) {
+          latitude = coords.latitude;
+          longitude = coords.longitude;
+          locationName = await reverseGeocodeLocation(latitude, longitude);
+          break; // Use the primary GPS location from the first geotagged photo
+        }
+      } catch (err) {
+        console.warn("Could not parse EXIF metadata from uploaded image", err);
+      }
+    }
+  }
+
   const post = await db.post.create({
-    data: { authorId: session.userId, caption: captionCheck.data, feedId },
+    data: {
+      authorId: session.userId,
+      caption: captionCheck.data,
+      feedId,
+      latitude,
+      longitude,
+      locationName,
+    },
   });
 
   try {

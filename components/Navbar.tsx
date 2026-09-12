@@ -44,6 +44,9 @@ export default function Navbar({
           >
             + Post
           </Link>
+          <Link href="/map" className="font-medium text-neutral-700 hover:text-sky-700">
+            Map
+          </Link>
           <Link href="/shared" className="relative text-neutral-700 hover:text-sky-700">
             Shared
             {unreadShares > 0 && (

@@ -34,6 +34,20 @@ export const feedDescriptionSchema = z.string().trim().max(200, "Description is 
 /** Special feed-switch target meaning the amalgamated "all my feeds" view. */
 export const ALL_FEEDS = "all";
 
+// ---------- location & maps ----------
+
+export const latitudeSchema = z.number().min(-90, "Latitude must be between -90 and 90").max(90, "Latitude must be between -90 and 90");
+export const longitudeSchema = z.number().min(-180, "Longitude must be between -180 and 180").max(180, "Longitude must be between -180 and 180");
+export const locationNameSchema = z.string().trim().max(200, "Location name is limited to 200 characters").optional().nullable();
+
+export const MAP_LIMIT_DEFAULT = 50;
+export const MAP_LIMIT_PRESETS = [25, 50, 100, 250] as const;
+
+export const mapQuerySchema = z.object({
+  feedId: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(MAP_LIMIT_DEFAULT),
+});
+
 // ---------- media ----------
 
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

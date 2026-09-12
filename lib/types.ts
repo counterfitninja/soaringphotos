@@ -19,3 +19,25 @@ export interface MemberOption {
   id: string;
   username: string;
 }
+
+export interface GeotaggedPostItem {
+  id: string;
+  author: {
+    id: string;
+    username: string;
+    avatarKey: string | null;
+  };
+  caption: string;
+  createdAt: Date | string;
+  latitude: number;
+  longitude: number;
+  locationName: string | null;
+  media: {
+    key: string;
+    mimeType: string;
+  }[];
+  feed: {
+    id: string;
+    name: string;
+  };
+}

@@ -1,9 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import CommentForm from "@/components/CommentForm";
 import DeletePostButton from "@/components/DeletePostButton";
 import FeedLabel from "@/components/FeedLabel";
 import LikeButton from "@/components/LikeButton";
 import MediaCarousel from "@/components/MediaCarousel";
+import PostMapModal from "@/components/PostMapModal";
 import ShareDialog from "@/components/ShareDialog";
 import type { MemberOption, PostWithRelations } from "@/lib/types";
 import { formatDateTime, initials, timeAgo } from "@/lib/utils";
@@ -21,8 +25,10 @@ export default function PostCard({
   showAllComments?: boolean;
   showFeedLabel?: boolean;
 }) {
+  const [showMapModal, setShowMapModal] = useState(false);
   const liked = post.likes.some((l) => l.userId === currentUserId);
   const comments = showAllComments ? post.comments : post.comments.slice(-3);
+  const hasGps = post.latitude !== null && post.longitude !== null;
 
   return (
     <article className="overflow-hidden rounded-2xl bg-white shadow-sm">
@@ -42,15 +48,35 @@ export default function PostCard({
             initials(post.author.username)
           )}
         </Link>
-        <div>
+        <div className="min-w-0 flex-1">
           <Link
             href={`/profile/${post.author.username}`}
-            className="text-sm font-semibold hover:underline"
+            className="block truncate text-sm font-semibold hover:underline"
           >
             {post.author.username}
           </Link>
-          <p className="text-xs text-neutral-400">{timeAgo(post.createdAt)}</p>
+          {post.locationName && (
+            <p className="truncate text-xs font-medium text-neutral-600">
+              📍 {post.locationName}
+            </p>
+          )}
+          <p className="text-xs text-neutral-400">
+            {formatDateTime(post.createdAt)} ({timeAgo(post.createdAt)})
+          </p>
         </div>
+
+        {hasGps && (
+          <button
+            type="button"
+            onClick={() => setShowMapModal(true)}
+            className="flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 transition-colors"
+            title="Show photo location on map"
+          >
+            <span>🗺️</span>
+            <span className="hidden sm:inline">Map</span>
+          </button>
+        )}
+
         {showFeedLabel && <FeedLabel name={post.feed.name} />}
         {post.author.id === currentUserId && <DeletePostButton postId={post.id} />}
       </header>
@@ -104,6 +130,17 @@ export default function PostCard({
 
         <CommentForm postId={post.id} members={members} />
       </div>
+
+      {hasGps && post.latitude !== null && post.longitude !== null && (
+        <PostMapModal
+          isOpen={showMapModal}
+          onClose={() => setShowMapModal(false)}
+          latitude={post.latitude}
+          longitude={post.longitude}
+          locationName={post.locationName}
+          authorUsername={post.author.username}
+        />
+      )}
     </article>
   );
 }

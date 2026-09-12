@@ -7,6 +7,7 @@ import FeedSwitcher, { type SwitcherFeed } from "@/components/FeedSwitcher";
 const tabs = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/create", label: "Post", icon: "➕" },
+  { href: "/map", label: "Map", icon: "🗺️" },
   { href: "/search", label: "Search", icon: "🔍" },
 ];
 
